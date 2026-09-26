@@ -43,8 +43,11 @@ export function ProjectTable({ projects }: { projects: Project[] }) {
         <thead>
           <tr>
             <th>Token</th>
+            <th>Kind</th>
             <th>Chain</th>
             <th>Status</th>
+            <th>Checklist</th>
+            <th>Target</th>
             <th>Market cap</th>
             <th>24h</th>
           </tr>
@@ -53,12 +56,24 @@ export function ProjectTable({ projects }: { projects: Project[] }) {
           {projects.map((project) => {
             const market = mockMarket(project.id);
             const status = PROJECT_STATUSES.find((item) => item.id === project.status)?.label || project.status;
+            const kind = launchKindOf(project.launch);
+            const phases = checksByPhase(project);
+            const done = phases.reduce((sum, phase) => sum + phase.done, 0);
+            const total = phases.reduce((sum, phase) => sum + phase.total, 0);
             return (
               <tr key={project.id}>
-                <td><Link className="name-link" href={`/projects/${project.id}`}><strong>{project.name}</strong><p>{tickerOf(project.ticker)}</p></Link></td>
+                <td>
+                  <Link className="name-link token-cell" href={`/projects/${project.id}`}>
+                    <span className="token-logo sm">{project.logo ? <img src={project.logo} alt="" /> : initials(project.name)}</span>
+                    <span><strong>{project.name}</strong><p>{tickerOf(project.ticker)}</p></span>
+                  </Link>
+                </td>
+                <td>{project.launch === "meme" ? "Meme" : project.utility || kind.label}</td>
                 <td>{project.chain}</td>
                 <td><Pill tone={projectTone(project.status)}>{status}</Pill></td>
-                <td className="price">{formatCompactUsd(market.marketCap)}</td>
+                <td>{done}/{total}</td>
+                <td>{formatDay(project.targetDate)}</td>
+                <td>{formatCompactUsd(market.marketCap)}</td>
                 <td className={market.change24h >= 0 ? "sage" : "clay"}>{formatPct(market.change24h)}</td>
               </tr>
             );

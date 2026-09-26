@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { COUNTRIES, phaseOf } from "../lib/labels";
+import { COUNTRIES } from "../lib/labels";
 import { money } from "../lib/format";
 import { uid } from "../lib/id";
 import { servicePriceLabel } from "../lib/price";
@@ -78,19 +78,15 @@ export function AddToQuote() {
   const filteredServices = useMemo(() => {
     const q = query.trim().toLowerCase();
     return store.services.filter((item) => {
-      if (!item.available) return false;
-      if (add?.phase && item.phase !== add.phase) return false;
+      if (item.kind !== "service" || !item.available) return false;
       return !q || `${item.name} ${item.summary}`.toLowerCase().includes(q);
     });
-  }, [add?.phase, query, store.services]);
+  }, [query, store.services]);
 
   const filteredPackages = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return store.packages.filter((item) => {
-      if (add?.phase && item.phase !== add.phase) return false;
-      return !q || item.name.toLowerCase().includes(q);
-    });
-  }, [add?.phase, query, store.packages]);
+    return store.packages.filter((item) => !q || item.name.toLowerCase().includes(q));
+  }, [query, store.packages]);
 
   if (!add) return null;
 
@@ -120,12 +116,13 @@ export function AddToQuote() {
       const bits = [tier?.duration || tier?.label || ""].filter(Boolean);
       if (service.countryPick) bits.push(countries.length ? `Worldwide + ${countries.join(", ")}` : "Worldwide");
       if (cashtag.trim()) bits.push(cashtag.trim());
+      const phase = add?.phase || service.phase;
       const line: LineItem = {
         id: uid("line"),
         source: "service",
         refId: service.id,
         name: service.name,
-        phase: service.phase,
+        phase,
         detail: bits.join(" · "),
         providerId: service.providerId,
         qty: count,
@@ -147,7 +144,7 @@ export function AddToQuote() {
           source: "service",
           refId: `${service.id}-mm`,
           name: `${service.name} · ${service.recurring.label}`,
-          phase: service.phase,
+          phase,
           detail: `${weekCount} week${weekCount === 1 ? "" : "s"}`,
           providerId: service.providerId,
           qty: weekCount,
@@ -168,7 +165,7 @@ export function AddToQuote() {
           source: "package",
           refId: pack.id,
           name: pack.name,
-          phase: pack.phase,
+          phase: add?.phase || pack.phase,
           detail: pack.group === "pr" ? `Tier ${pack.rank}` : pack.id === "artem-tier-1" ? "Narrative & GTM" : "Bundle",
           providerId: pack.providerId,
           qty: count,
@@ -186,7 +183,7 @@ export function AddToQuote() {
           source: "custom",
           refId: pack.id,
           name: item.name,
-          phase: pack.phase,
+          phase: add?.phase || pack.phase,
           detail: [item.group, item.note].filter(Boolean).join(" · "),
           providerId: pack.providerId,
           qty: 1,
@@ -224,20 +221,20 @@ export function AddToQuote() {
                 <button type="button" className={picker === "packages" ? "chip on" : "chip"} onClick={() => setPicker("packages")}>Packages</button>
               </div>
               <input className="input" placeholder="Search" value={query} onChange={(event) => setQuery(event.target.value)} />
-              <div className="check-scroll" style={{ maxHeight: 280 }}>
-                {picker === "services"
-                  ? filteredServices.map((item) => (
-                    <button key={item.id} type="button" className="btn btn-ghost" style={{ justifyContent: "space-between" }} onClick={() => applyService(item.id)}>
+              <div className="check-scroll" style={{ maxHeight: 320 }}>
+                {picker === "services" ? (
+                  filteredServices.length === 0 ? <p className="muted line-empty">No services match.</p> : filteredServices.map((item) => (
+                    <button key={item.id} type="button" className="list-row" onClick={() => applyService(item.id)}>
                       <span>{item.name}</span>
-                      <span className="tiny">{phaseOf(item.phase).label} · {servicePriceLabel(item)}</span>
+                      <b className="num">{servicePriceLabel(item)}</b>
                     </button>
                   ))
-                  : filteredPackages.map((item) => (
-                    <button key={item.id} type="button" className="btn btn-ghost" style={{ justifyContent: "space-between" }} onClick={() => { applyPackage(item.id); setCallers([]); }}>
-                      <span>{item.name}</span>
-                      <span className="tiny">{money(item.price, item.currency)}</span>
-                    </button>
-                  ))}
+                ) : filteredPackages.length === 0 ? <p className="muted line-empty">No packages match.</p> : filteredPackages.map((item) => (
+                  <button key={item.id} type="button" className="list-row" onClick={() => { applyPackage(item.id); setCallers([]); }}>
+                    <span>{item.name}</span>
+                    <b className="num">{money(item.price, item.currency)}</b>
+                  </button>
+                ))}
               </div>
             </>
           ) : (

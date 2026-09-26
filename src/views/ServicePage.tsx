@@ -4,12 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Check, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
-import { Confirm, Empty } from "../components/ui";
+import { Confirm, CopyIcon, Empty } from "../components/ui";
 import { byId, href, money, whatsappHref } from "../lib/format";
 import { COUNTRIES, SERVICE_KINDS, phaseOf } from "../lib/labels";
 import { serviceMark } from "../lib/marks";
 import { initials } from "../lib/logo";
-import { socialLogo } from "../lib/brands";
+import { SocialMark, hasSocialMark } from "../components/SocialMark";
 import { useStore } from "../store";
 import { useUi } from "../ui";
 import type { Contact, Platform, Service } from "../types";
@@ -51,7 +51,7 @@ export function ServicePage() {
         <span className="mark token-logo lg">{serviceMark(service, store.platforms) ? <img src={serviceMark(service, store.platforms)} alt="" /> : initials(service.name)}</span>
         <div className="desk-copy">
           <div className="kicker">{kicker}{provider ? <>{kicker ? " · " : ""}<Link href={`/providers/${provider.id}`}>{provider.name}</Link></> : ""}</div>
-          <h1 className="display">{service.name}</h1>
+          <h1 className="display copy-line"><span>{service.name}</span><CopyIcon text={service.name} /></h1>
         </div>
         <div className="desk-figure">
           <div className="tiny">{tier ? tier.label : "Price"}</div>
@@ -97,7 +97,7 @@ function ContactSheet({ contact }: { contact: Contact }) {
           {reach.map((item) => (
             <a key={item.label} className="stat nest" href={item.href} target="_blank" rel="noreferrer">
               <span className="stat-top"><span className="tiny">{item.label}</span></span>
-              <b>{item.value}</b>
+              <span className="copy-line"><b>{item.value}</b><CopyIcon text={item.value} /></span>
             </a>
           ))}
         </div>
@@ -106,12 +106,11 @@ function ContactSheet({ contact }: { contact: Contact }) {
         <div className="req-pair">
           <span className="tiny">Socials</span>
           {contact.links.map((link) => {
-            const logo = socialLogo(link.name);
             return (
               <a key={link.id} className="social-row" href={href(link.url)} target="_blank" rel="noreferrer">
-                <span className="token-logo sm">{logo ? <img src={logo} alt="" /> : initials(link.name)}</span>
+                <span className="token-logo sm">{hasSocialMark(link.name) ? <SocialMark name={link.name} /> : initials(link.name)}</span>
                 <span>{link.name}</span>
-                <b>{link.handle || link.url}</b>
+                <span className="copy-line"><b>{link.handle || link.url}</b><CopyIcon text={link.handle || link.url} /></span>
               </a>
             );
           })}

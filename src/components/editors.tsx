@@ -659,11 +659,16 @@ export function SocialEditor({ open, project, social, onClose }: { open: boolean
   );
 }
 
-export function BriefEditor({ open, embedded, project, onClose }: { open?: boolean; embedded?: boolean; project: Project; onClose: () => void }) {
+export function BriefEditor({ open, embedded, project, focus, onClose }: { open?: boolean; embedded?: boolean; project: Project; focus?: string | null; onClose: () => void }) {
   const store = useStore();
   const [draft, setDraft] = useDraft(Boolean(open || embedded), project);
   const set = (patch: Partial<Project>) => setDraft({ ...draft, ...patch });
   const launchpads = store.platforms.filter((item) => item.kind === "launchpad");
+  useEffect(() => {
+    if (!focus) return;
+    const node = document.querySelector<HTMLElement>(`[data-focus="${focus}"]`);
+    node?.focus();
+  }, [focus]);
   const form = (
       <form className="stack" onSubmit={(event) => {
         event.preventDefault();
@@ -683,19 +688,19 @@ export function BriefEditor({ open, embedded, project, onClose }: { open?: boole
         onClose();
       }}>
         <div className="form-grid">
-          <Field label="Token"><input className="input" value={draft.name} onChange={(e) => set({ name: e.target.value })} required /></Field>
-          <Field label="Ticker"><input className="input" value={draft.ticker} onChange={(e) => set({ ticker: e.target.value })} /></Field>
+          <Field label="Token"><input className="input" data-focus="name" value={draft.name} onChange={(e) => set({ name: e.target.value })} required /></Field>
+          <Field label="Ticker"><input className="input" data-focus="ticker" value={draft.ticker} onChange={(e) => set({ ticker: e.target.value })} /></Field>
           <Field label="Chain">
             <Select value={draft.chain} onChange={(value) => set({ chain: value })} options={CHAINS.map((chain) => ({ value: chain, label: chain }))} />
           </Field>
           <Field label="Launchpad">
             <Select value={draft.launchpadId} onChange={(value) => set({ launchpadId: value })} options={launchpads.map((item) => ({ value: item.id, label: item.name }))} />
           </Field>
-          <Field label="Contract" className="span-2"><input className="input" value={draft.contract} onChange={(e) => set({ contract: e.target.value })} /></Field>
-          <Field label="Supply"><input className="input" value={draft.supply} onChange={(e) => set({ supply: e.target.value })} /></Field>
-          <Field label="Owner"><input className="input" value={draft.client} onChange={(e) => set({ client: e.target.value })} /></Field>
-          <Field label="Budget USD"><input className="input" value={draft.budgetUsd} onChange={(e) => set({ budgetUsd: Number(e.target.value) || 0 })} /></Field>
-          <Field label="Target date"><input className="input" type="date" value={draft.targetDate} onChange={(e) => set({ targetDate: e.target.value })} /></Field>
+          <Field label="Contract" className="span-2"><input className="input" data-focus="contract" value={draft.contract} onChange={(e) => set({ contract: e.target.value })} /></Field>
+          <Field label="Supply"><input className="input" data-focus="supply" value={draft.supply} onChange={(e) => set({ supply: e.target.value })} /></Field>
+          <Field label="Owner"><input className="input" data-focus="owner" value={draft.client} onChange={(e) => set({ client: e.target.value })} /></Field>
+          <Field label="Budget USD"><input className="input" data-focus="budget" value={draft.budgetUsd} onChange={(e) => set({ budgetUsd: Number(e.target.value) || 0 })} /></Field>
+          <Field label="Target date"><input className="input" data-focus="target" type="date" value={draft.targetDate} onChange={(e) => set({ targetDate: e.target.value })} /></Field>
           <Field label="Notes" className="span-2"><textarea className="textarea" value={draft.notes} onChange={(e) => set({ notes: e.target.value })} /></Field>
         </div>
         <div className="cluster">
@@ -725,15 +730,15 @@ export function BriefEditor({ open, embedded, project, onClose }: { open?: boole
           onClose();
         }}>
           <div className="identity-grid fields">
-            <Field label="Token"><input className="input" value={draft.name} onChange={(e) => set({ name: e.target.value })} required /></Field>
-            <Field label="Ticker"><input className="input" value={draft.ticker} onChange={(e) => set({ ticker: e.target.value })} /></Field>
-            <Field label="Owner"><input className="input" value={draft.client} onChange={(e) => set({ client: e.target.value })} /></Field>
+            <Field label="Token"><input className="input" data-focus="name" value={draft.name} onChange={(e) => set({ name: e.target.value })} required /></Field>
+            <Field label="Ticker"><input className="input" data-focus="ticker" value={draft.ticker} onChange={(e) => set({ ticker: e.target.value })} /></Field>
+            <Field label="Owner"><input className="input" data-focus="owner" value={draft.client} onChange={(e) => set({ client: e.target.value })} /></Field>
             <Field label="Chain"><Select value={draft.chain} onChange={(value) => set({ chain: value })} options={CHAINS.map((chain) => ({ value: chain, label: chain }))} /></Field>
             <Field label="Launchpad"><Select value={draft.launchpadId} onChange={(value) => set({ launchpadId: value })} options={launchpads.map((item) => ({ value: item.id, label: item.name }))} /></Field>
-            <Field label="Target"><input className="input" type="date" value={draft.targetDate} onChange={(e) => set({ targetDate: e.target.value })} /></Field>
-            <Field label="Budget"><input className="input" value={draft.budgetUsd} onChange={(e) => set({ budgetUsd: Number(e.target.value) || 0 })} /></Field>
-            <Field label="Supply" className="span-rest"><input className="input" value={draft.supply} onChange={(e) => set({ supply: e.target.value })} /></Field>
-            <Field label="Contract" className="span-2"><input className="input" value={draft.contract} onChange={(e) => set({ contract: e.target.value })} /></Field>
+            <Field label="Target"><input className="input" data-focus="target" type="date" value={draft.targetDate} onChange={(e) => set({ targetDate: e.target.value })} /></Field>
+            <Field label="Budget"><input className="input" data-focus="budget" value={draft.budgetUsd} onChange={(e) => set({ budgetUsd: Number(e.target.value) || 0 })} /></Field>
+            <Field label="Supply" className="span-rest"><input className="input" data-focus="supply" value={draft.supply} onChange={(e) => set({ supply: e.target.value })} /></Field>
+            <Field label="Contract" className="span-2"><input className="input" data-focus="contract" value={draft.contract} onChange={(e) => set({ contract: e.target.value })} /></Field>
           </div>
           <Field label="Notes" className="identity-note-field"><textarea className="textarea" value={draft.notes} onChange={(e) => set({ notes: e.target.value })} /></Field>
           <div className="cluster">

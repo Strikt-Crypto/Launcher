@@ -51,7 +51,6 @@ export function Packages() {
           <Select value={desk} onChange={setDesk} options={[{ value: "all", label: "All sellers" }, ...desks.map((provider) => ({ value: provider.id, label: provider.name }))]} />
           <input className="input" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
           <ViewSwitch value={view} onChange={setView} />
-          <Link className="btn btn-primary" href="/packages/new"><Plus size={16} weight="bold" />New package</Link>
         </div>
       </div>
       <div className="desk-fit">
@@ -65,7 +64,7 @@ export function Packages() {
                   <tbody>
                     {cards.map((pack) => (
                       <tr key={pack.id}>
-                        <td><Link className="name-link" href={`/packages/${pack.id}`}><strong>{pack.name}</strong></Link></td>
+                        <td><Link className="name-link token-cell" href={`/packages/${pack.id}`}><span className="token-logo sm">{packageMark(pack, store.platforms) ? <img src={packageMark(pack, store.platforms)} alt="" /> : initials(pack.name)}</span><span><strong>{pack.name}</strong></span></Link></td>
                         <td>{pack.group === "pr" ? "Article PR" : pack.id.startsWith("mods-") ? "Mods" : pack.id === "artem-tier-1" ? "Tier 1" : pack.group === "budget" ? "Budget" : "Bundle"}</td>
                         <td className="price">{money(pack.price, pack.currency)}</td>
                         <td>{pack.outlets.length}</td>

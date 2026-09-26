@@ -72,6 +72,7 @@ function paintRoster(state: AppState): AppState {
         return {
           ...contact,
           providerId: contact.providerId || next.providerId,
+          image: contact.image || next.image,
           company: /desk/i.test(contact.company) ? next.company : contact.company,
           title: contact.title === "Trending buyer" || /desk/i.test(contact.title) ? next.title : contact.title,
           note: contact.note === "Places FOMO and GMGN trending windows." ? next.note : contact.note.replace(/ for the desk/i, ""),

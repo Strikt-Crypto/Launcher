@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowSquareOut, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
-import { Confirm, Empty, Modal } from "../components/ui";
-import { socialLogo } from "../lib/brands";
+import { Confirm, CopyIcon, Empty, Modal } from "../components/ui";
+import { SocialMark } from "../components/SocialMark";
 import { href, tickerOf, whatsappHref } from "../lib/format";
 import { PROJECT_STATUSES, SOCIAL_NAMES } from "../lib/labels";
 import { initials } from "../lib/logo";
@@ -40,7 +40,7 @@ export function ContactPage() {
           {contact.image ? <img src={contact.image} alt="" /> : <span>{initials(contact.name)}</span>}
         </div>
         <div className="kicker">{contact.title || "Contact"}{contact.company ? ` · ${contact.company}` : ""}</div>
-        <h1 className="display">{contact.name}</h1>
+        <h1 className="display copy-line"><span>{contact.name}</span><CopyIcon text={contact.name} /></h1>
         <div className="desk-head-actions">
           <Link className="btn" href={`/contacts/${contact.id}/edit`}><PencilSimple size={16} />Edit</Link>
           <button type="button" className="btn btn-danger" onClick={() => setDrop(true)}><Trash size={16} />Remove</button>
@@ -57,14 +57,19 @@ export function ContactPage() {
             <div className="line-fill">
               {slots.map((slot) => {
                 const url = href(slot.link?.url || "");
-                const logo = socialLogo(slot.name);
-                return (
-                  <div key={slot.key} className="list-row quad">
-                    <span className="token-logo sm">{logo ? <img src={logo} alt="" /> : initials(slot.name)}</span>
+                const value = slot.link ? (slot.link.handle || slot.link.url || "") : "";
+                const cells = (
+                  <>
+                    <span className="token-logo sm"><SocialMark name={slot.name} /></span>
                     <span>{slot.name}</span>
-                    <span className={slot.link ? undefined : "muted"}>{slot.link ? (slot.link.handle || slot.link.url || "—") : "Not linked"}</span>
-                    {url ? <a className="btn btn-small" href={url} target="_blank" rel="noreferrer"><ArrowSquareOut size={14} />Open</a> : <span />}
-                  </div>
+                    {value ? <span className="copy-line"><span>{value}</span><CopyIcon text={value} /></span> : <span className="text-set">Not linked</span>}
+                    {url ? <a className="btn btn-small" href={url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}><ArrowSquareOut size={14} />Open</a> : <span />}
+                  </>
+                );
+                return slot.link ? (
+                  <div key={slot.key} className="list-row quad">{cells}</div>
+                ) : (
+                  <Link key={slot.key} href={`/contacts/${contact.id}/edit`} className="list-row quad">{cells}</Link>
                 );
               })}
             </div>
@@ -75,11 +80,11 @@ export function ContactPage() {
             <div className="detail-grid">
               <div>
                 <span className="tiny">Number</span>
-                {whatsappHref(contact.phone) ? <a href={whatsappHref(contact.phone)} target="_blank" rel="noreferrer">{contact.phone}</a> : <strong>—</strong>}
+                {whatsappHref(contact.phone) ? <span className="copy-line"><a href={whatsappHref(contact.phone)} target="_blank" rel="noreferrer">{contact.phone}</a><CopyIcon text={contact.phone} /></span> : <Link className="text-set" href={`/contacts/${contact.id}/edit`}>Not set</Link>}
               </div>
               <div>
                 <span className="tiny">Email</span>
-                {contact.email ? <a href={href(contact.email)}>{contact.email}</a> : <strong>—</strong>}
+                {contact.email ? <span className="copy-line"><a href={href(contact.email)}>{contact.email}</a><CopyIcon text={contact.email} /></span> : <Link className="text-set" href={`/contacts/${contact.id}/edit`}>Not set</Link>}
               </div>
               <div>
                 <span className="tiny">Company</span>

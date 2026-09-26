@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ProviderEditor } from "../components/editors";
 import { PageHead, Pill, Select, Tabs } from "../components/ui";
 import { deskMark } from "../lib/marks";
@@ -13,7 +14,11 @@ export function Providers() {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("all");
   const [role, setRole] = useState("all");
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const params = useSearchParams();
+  const [open, setOpen] = useState(params.get("new") === "1");
+  useEffect(() => { if (params.get("new") === "1") setOpen(true); }, [params]);
+  const close = () => { setOpen(false); if (params.get("new") === "1") router.replace("/providers"); };
   const q = query.trim().toLowerCase();
   const regions = [...new Set(store.providers.map((provider) => provider.region.trim()).filter(Boolean))].sort();
   const roles = [...new Set(store.providers.map((provider) => provider.role.trim()).filter(Boolean))].sort();
@@ -24,7 +29,7 @@ export function Providers() {
   });
   return (
     <div className="page">
-      <PageHead kicker="Spend" title="Sellers" lede="Who a launch pays. Site, Telegram, X, Discord, and email live on each one." actions={<button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>New seller</button>} />
+      <PageHead kicker="Spend" title="Sellers" lede="Who a launch pays. Site, Telegram, X, Discord, and email live on each one." />
       <div className="tool-bar">
         <Tabs
           value={region}
@@ -69,7 +74,7 @@ export function Providers() {
           );
         })}
       </div>
-      <ProviderEditor open={open} initial={null} onClose={() => setOpen(false)} />
+      <ProviderEditor open={open} initial={null} onClose={close} />
     </div>
   );
 }

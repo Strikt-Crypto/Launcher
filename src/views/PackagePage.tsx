@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Check, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
-import { Confirm, Empty } from "../components/ui";
+import { Confirm, CopyIcon, Empty } from "../components/ui";
 import { byId, href, money, whatsappHref } from "../lib/format";
 import { initials } from "../lib/logo";
 import { outletMark, packageMark } from "../lib/marks";
-import { socialLogo } from "../lib/brands";
+import { SocialMark, hasSocialMark } from "../components/SocialMark";
 import { useStore } from "../store";
 import { useUi } from "../ui";
 import type { Contact, Outlet } from "../types";
@@ -47,7 +47,7 @@ export function PackagePage() {
         <span className="mark token-logo lg">{logo ? <img src={logo} alt="" /> : initials(pack.group === "pr" ? "Article PR" : pack.name)}</span>
         <div className="desk-copy">
           <div className="kicker">{kind}{provider ? <> · <Link href={`/providers/${provider.id}`}>{provider.name}</Link></> : ""}</div>
-          <h1 className="display">{pack.name}</h1>
+          <h1 className="display copy-line"><span>{pack.name}</span><CopyIcon text={pack.name} /></h1>
         </div>
         <div className="desk-figure">
           <div className="tiny">{callerSum ? "Package + callers" : "Price"}</div>
@@ -166,7 +166,7 @@ function PackageContact({ contact }: { contact: Contact }) {
           {reach.map((item) => (
             <a key={item.label} className="stat nest" href={item.href} target="_blank" rel="noreferrer">
               <span className="stat-top"><span className="tiny">{item.label}</span></span>
-              <b>{item.value}</b>
+              <span className="copy-line"><b>{item.value}</b><CopyIcon text={item.value} /></span>
             </a>
           ))}
         </div>
@@ -175,12 +175,11 @@ function PackageContact({ contact }: { contact: Contact }) {
         <div className="req-pair">
           <span className="tiny">Socials</span>
           {contact.links.map((link) => {
-            const logo = socialLogo(link.name);
             return (
               <a key={link.id} className="social-row" href={href(link.url)} target="_blank" rel="noreferrer">
-                <span className="token-logo sm">{logo ? <img src={logo} alt="" /> : initials(link.name)}</span>
+                <span className="token-logo sm">{hasSocialMark(link.name) ? <SocialMark name={link.name} /> : initials(link.name)}</span>
                 <span>{link.name}</span>
-                <b>{link.handle || link.url}</b>
+                <span className="copy-line"><b>{link.handle || link.url}</b><CopyIcon text={link.handle || link.url} /></span>
               </a>
             );
           })}

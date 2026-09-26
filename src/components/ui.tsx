@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { SquaresFour, Table, X } from "@phosphor-icons/react";
+import { Check, Copy, SquaresFour, Table, X } from "@phosphor-icons/react";
 import { cx } from "../lib/format";
 import { PHASE_COLOR, phaseOf } from "../lib/labels";
 import { formatUsd } from "../lib/format";
@@ -29,6 +29,29 @@ export function Section({ kicker, title, action, children }: { kicker?: string; 
       </div>
       {children}
     </section>
+  );
+}
+
+export function CopyIcon({ text }: { text: string }) {
+  const [done, setDone] = useState(false);
+  const value = text.trim();
+  if (!value || value === "—" || value === "Not set") return null;
+  return (
+    <button
+      type="button"
+      className="copy-icon"
+      aria-label={done ? "Copied" : "Copy"}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void navigator.clipboard.writeText(value).then(() => {
+          setDone(true);
+          window.setTimeout(() => setDone(false), 900);
+        }).catch(() => {});
+      }}
+    >
+      {done ? <Check size={13} weight="bold" /> : <Copy size={13} />}
+    </button>
   );
 }
 
@@ -82,11 +105,12 @@ export function Confirm({ open, title, text, confirm = "Remove", onConfirm, onCl
   );
 }
 
-export function Tabs({ tabs, value, onChange, className }: { tabs: { id: string; label: string; count?: number }[]; value: string; onChange: (id: string) => void; className?: string }) {
+export function Tabs({ tabs, value, onChange, className }: { tabs: { id: string; label: string; count?: number; icon?: ComponentType<{ size?: number; weight?: "regular" | "fill" }> }[]; value: string; onChange: (id: string) => void; className?: string }) {
   return (
     <div className={cx("tabs", className)} role="tablist">
       {tabs.map((tab) => (
         <button key={tab.id} type="button" role="tab" aria-selected={value === tab.id} className={cx("tab", value === tab.id && "on")} onClick={() => onChange(tab.id)}>
+          {tab.icon ? <tab.icon size={16} weight={value === tab.id ? "fill" : "regular"} /> : null}
           {tab.label}
           {tab.count != null ? <span className="tab-count">{tab.count}</span> : null}
         </button>

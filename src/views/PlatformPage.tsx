@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowSquareOut, PencilSimple } from "@phosphor-icons/react";
 import { PlatformEditor } from "../components/editors";
-import { Empty } from "../components/ui";
+import { CopyIcon, Empty } from "../components/ui";
 import { href } from "../lib/format";
 import { PLATFORM_KINDS, PROJECT_STATUSES, phaseOf } from "../lib/labels";
 import { serviceMark } from "../lib/marks";
@@ -17,7 +17,11 @@ export function PlatformPage() {
   const { id } = useParams();
   const store = useStore();
   const platform = store.platforms.find((item) => item.id === id);
-  const [edit, setEdit] = useState(false);
+  const router = useRouter();
+  const params = useSearchParams();
+  const [edit, setEdit] = useState(params.get("edit") === "1");
+  useEffect(() => { if (params.get("edit") === "1") setEdit(true); }, [params]);
+  const close = () => { setEdit(false); if (params.get("edit") === "1" && platform) router.replace(`/platforms/${platform.id}`); };
   if (!platform) return <div className="page"><Empty title="Platform missing" text="It was removed." action={<Link href="/platforms" className="btn">Platforms</Link>} /></div>;
   const services = store.services.filter((item) => item.platformIds.includes(platform.id));
   const projects = store.projects.filter((item) => item.launchpadId === platform.id);
@@ -30,7 +34,7 @@ export function PlatformPage() {
         <span className="mark token-logo lg">{platform.logo ? <img src={platform.logo} alt="" /> : initials(platform.name)}</span>
         <div className="desk-copy">
           <div className="kicker">{kind}</div>
-          <h1 className="display">{platform.name}</h1>
+          <h1 className="display copy-line"><span>{platform.name}</span><CopyIcon text={platform.name} /></h1>
         </div>
         <div className="desk-figure">
           <div className="tiny">Projects</div>
@@ -55,20 +59,27 @@ export function PlatformPage() {
                 <span className="stat-top"><span className="tiny">Chains</span></span>
                 <b>{platform.chains.length ? platform.chains.join(", ") : "Any"}</b>
               </div>
-              <div className="stat">
-                <span className="stat-top"><span className="tiny">Fee</span></span>
-                <b>{platform.feeNote || "Open"}</b>
-              </div>
+              {platform.feeNote ? (
+                <div className="stat">
+                  <span className="stat-top"><span className="tiny">Fee</span></span>
+                  <span className="copy-line"><b>{platform.feeNote}</b><CopyIcon text={platform.feeNote} /></span>
+                </div>
+              ) : (
+                <button type="button" className="stat" onClick={() => setEdit(true)}>
+                  <span className="stat-top"><span className="tiny">Fee</span></span>
+                  <b>Not set</b>
+                </button>
+              )}
               {site ? (
                 <a className="stat" href={href(platform.url)} target="_blank" rel="noreferrer">
                   <span className="stat-top"><span className="tiny">Site</span></span>
-                  <b>{site}</b>
+                  <span className="copy-line"><b>{site}</b><CopyIcon text={platform.url} /></span>
                 </a>
               ) : (
-                <div className="stat">
+                <button type="button" className="stat" onClick={() => setEdit(true)}>
                   <span className="stat-top"><span className="tiny">Site</span></span>
                   <b>Not set</b>
-                </div>
+                </button>
               )}
             </div>
           </section>
@@ -112,7 +123,7 @@ export function PlatformPage() {
         </div>
       </div>
 
-      <PlatformEditor open={edit} initial={platform} onClose={() => setEdit(false)} />
+      <PlatformEditor open={edit} initial={platform} onClose={close} />
     </div>
   );
 }

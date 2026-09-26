@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus } from "@phosphor-icons/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PlatformEditor } from "../components/editors";
 import { Empty, PageHead, Pill, Select, Tabs, ViewSwitch } from "../components/ui";
 import { PLATFORM_KINDS } from "../lib/labels";
@@ -17,7 +17,11 @@ export function Platforms() {
   const [chain, setChain] = useState("all");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"grid" | "table">("grid");
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const params = useSearchParams();
+  const [open, setOpen] = useState(params.get("new") === "1");
+  useEffect(() => { if (params.get("new") === "1") setOpen(true); }, [params]);
+  const close = () => { setOpen(false); if (params.get("new") === "1") router.replace("/platforms"); };
   const q = query.trim().toLowerCase();
   const chains = [...new Set(store.platforms.flatMap((platform) => platform.chains))].sort();
   const groups = PLATFORM_KINDS.filter((item) => kind === "all" || kind === item.id)
@@ -29,7 +33,7 @@ export function Platforms() {
 
   return (
     <div className="page screen">
-      <PageHead kicker="Where it launches" title="Platforms" lede="Launchpads, market terminals, wallets, and social. Pick the pad on the project." actions={<button type="button" className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={16} weight="bold" />New platform</button>} />
+      <PageHead kicker="Where it launches" title="Platforms" lede="Launchpads, market terminals, wallets, and social. Pick the pad on the project." />
       <div className="tool-bar">
         <Tabs
           value={kind}
@@ -56,7 +60,7 @@ export function Platforms() {
                 <tbody>
                   {shown.map(({ platform, kindShort }) => (
                     <tr key={platform.id}>
-                      <td><Link className="name-link" href={`/platforms/${platform.id}`}><strong>{platform.name}</strong></Link></td>
+                      <td><Link className="name-link token-cell" href={`/platforms/${platform.id}`}><span className="token-logo sm">{platform.logo ? <img src={platform.logo} alt="" /> : initials(platform.name)}</span><span><strong>{platform.name}</strong></span></Link></td>
                       <td>{kindShort}</td>
                       <td>{platform.chains.join(", ") || "Any"}</td>
                       <td>{platform.feeNote || "Open"}</td>
@@ -68,7 +72,7 @@ export function Platforms() {
           ) : (
           <div className="project-grid">
             {shown.map(({ platform, kindLabel, kindShort }) => (
-              <Link key={platform.id} href={`/platforms/${platform.id}`} className="project-card">
+              <Link key={platform.id} href={platform.url ? `/platforms/${platform.id}` : `/platforms/${platform.id}?edit=1`} className="project-card">
                 <div className="card-top">
                   <span className="token-logo brand-mark">{platform.logo ? <img src={platform.logo} alt="" /> : initials(platform.name)}</span>
                   <div className="card-id">
@@ -96,7 +100,7 @@ export function Platforms() {
         </section>
       )}
       </div>
-      <PlatformEditor open={open} initial={null} onClose={() => setOpen(false)} />
+      <PlatformEditor open={open} initial={null} onClose={close} />
     </div>
   );
 }

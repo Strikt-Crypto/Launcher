@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus } from "@phosphor-icons/react";
 import { Empty, PageHead, Pill, Select, Tabs, ViewSwitch } from "../components/ui";
-import { socialLogo } from "../lib/brands";
+import { SocialMark, hasSocialMark } from "../components/SocialMark";
 import { initials } from "../lib/logo";
 import { useStore } from "../store";
 
@@ -35,7 +35,6 @@ export function Contacts() {
         kicker="People"
         title="Contacts"
         lede="Names, numbers, titles, and the socials you actually use."
-        actions={<Link className="btn btn-primary" href="/contacts/new"><Plus size={16} weight="bold" />Add contact</Link>}
       />
       <div className="tool-bar">
         <Tabs
@@ -65,7 +64,7 @@ export function Contacts() {
             <tbody>
               {shown.map((contact) => (
                 <tr key={contact.id}>
-                  <td><Link className="name-link" href={`/contacts/${contact.id}`}><strong>{contact.name}</strong></Link></td>
+                  <td><Link className="name-link token-cell" href={`/contacts/${contact.id}`}><span className="token-logo sm">{contact.image ? <img src={contact.image} alt="" /> : initials(contact.name)}</span><span><strong>{contact.name}</strong></span></Link></td>
                   <td>{contact.title || "—"}</td>
                   <td>{contact.company || "—"}</td>
                   <td>{contact.email || "—"}</td>
@@ -87,8 +86,8 @@ export function Contacts() {
                 <div className="tiny">{contact.title || "No title"}{contact.company ? ` · ${contact.company}` : ""}</div>
               </div>
               <Pill>{assigned(contact.id) ? "Assigned" : "Open"}</Pill>
-              {contact.links.some((link) => socialLogo(link.name)) && (
-                <div className="chain-row contact-marks">{contact.links.map((link) => socialLogo(link.name) ? <img key={link.id} className="mark-logo" src={socialLogo(link.name)} alt="" /> : null)}</div>
+              {contact.links.some((link) => hasSocialMark(link.name)) && (
+                <div className="chain-row contact-marks">{contact.links.map((link) => hasSocialMark(link.name) ? <SocialMark key={link.id} name={link.name} size={14} /> : null)}</div>
               )}
             </div>
             <div className="lane-grid">

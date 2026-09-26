@@ -4,10 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ProviderEditor } from "../components/editors";
-import { Empty } from "../components/ui";
+import { CopyIcon, Empty } from "../components/ui";
 import { formatUsd, href } from "../lib/format";
 import { phaseOf } from "../lib/labels";
-import { socialLogo } from "../lib/brands";
+import { SocialMark } from "../components/SocialMark";
 import { deskMark, packageMark, serviceMark } from "../lib/marks";
 import { initials } from "../lib/logo";
 import { useStore } from "../store";
@@ -33,7 +33,7 @@ export function ProviderPage() {
       <header className="card desk-head has-mark">
         <span className="mark token-logo lg">{deskMark(provider, store.platforms) ? <img src={deskMark(provider, store.platforms)} alt="" /> : initials(provider.name)}</span>
         <div className="kicker">{provider.role || "Seller"}{provider.region ? ` · ${provider.region}` : ""}</div>
-        <h1 className="display">{provider.name}</h1>
+        <h1 className="display copy-line"><span>{provider.name}</span><CopyIcon text={provider.name} /></h1>
         <p className="lede">{provider.about || "Add a note about how this seller works."}</p>
         <div className="desk-figure">
           <div className="tiny">Offers</div>
@@ -84,18 +84,23 @@ export function ProviderPage() {
         <aside className="card offer-side">
           <dl className="facts">
             <dt>Role</dt>
-            <dd>{provider.role || "Not set"}</dd>
+            <dd>{provider.role ? <span className="copy-line"><span>{provider.role}</span><CopyIcon text={provider.role} /></span> : <button type="button" className="text-set" onClick={() => setEdit(true)}>Not set</button>}</dd>
             <dt>Region</dt>
-            <dd>{provider.region || "Not set"}</dd>
+            <dd>{provider.region ? <span className="copy-line"><span>{provider.region}</span><CopyIcon text={provider.region} /></span> : <button type="button" className="text-set" onClick={() => setEdit(true)}>Not set</button>}</dd>
             <dt>Services</dt>
             <dd>{services.length}</dd>
             <dt>Packages</dt>
             <dd>{packages.length}</dd>
           </dl>
           <div className="tiny">Links</div>
-          {links.length === 0 && <p className="muted">No site or socials yet.</p>}
+          {links.length === 0 && <button type="button" className="text-set" onClick={() => setEdit(true)}>Not set</button>}
           <div className="stack">
-            {links.map((item) => <a key={item.label} href={item.url} target="_blank" rel="noreferrer" className="brand-bit">{socialLogo(item.label) && <img className="mark-logo" src={socialLogo(item.label)} alt="" />}{item.label}</a>)}
+            {links.map((item) => (
+              <span key={item.label} className="copy-line">
+                <a href={item.url} target="_blank" rel="noreferrer" className="brand-bit"><SocialMark name={item.label} size={14} />{item.label}</a>
+                <CopyIcon text={item.url} />
+              </span>
+            ))}
           </div>
         </aside>
       </div>

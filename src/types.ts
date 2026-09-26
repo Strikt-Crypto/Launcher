@@ -243,6 +243,13 @@ export interface Treasury {
   notes: string;
 }
 
+export interface Earning {
+  id: string;
+  phase: PhaseId;
+  amount: number;
+  note: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -269,6 +276,7 @@ export interface Project {
   logoPacks: AssetPack[];
   bannerPacks: AssetPack[];
   treasury: Treasury;
+  earnings?: Earning[];
   createdAt: string;
   updatedAt: string;
   targetDate: string;

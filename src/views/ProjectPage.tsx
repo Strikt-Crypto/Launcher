@@ -6,13 +6,15 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { BriefEditor, DiscountEditor, LineEditor, SocialEditor, WalletEditor } from "../components/editors";
 import { SupplyPicker } from "../components/SupplyPicker";
 import { MarketBoard } from "../components/MarketBoard";
-import { Confirm, Empty, Menu, Modal, Select, Tabs } from "../components/ui";
+import { Confirm, CopyIcon, Empty, Menu, Modal, Select, Tabs } from "../components/ui";
 import { cloneProject } from "../lib/clone";
 import { byId, formatCompactUsd, formatDay, formatEth, formatUsd, href, money, shortAddress, tickerOf, whatsappHref } from "../lib/format";
 import { uid } from "../lib/id";
 import { BILLING, LAUNCH_KINDS, LINE_STATUSES, PHASES, PHASE_COLOR, PROJECT_STATUSES, ROUTE_LABEL, WORK_LANES, launchKindOf, phaseOf } from "../lib/labels";
 import { checksInPhase } from "../lib/checks";
-import { chainLogo, socialLogo } from "../lib/brands";
+import { earnedIn, earningEntries } from "../lib/earnings";
+import { chainLogo } from "../lib/brands";
+import { SocialMark, hasSocialMark } from "../components/SocialMark";
 import { initials, readAsset, readLogo } from "../lib/logo";
 import { deskMark, packageMark, serviceMark } from "../lib/marks";
 import { projectQuote } from "../lib/quote";
@@ -21,8 +23,33 @@ import { mockMarket } from "../lib/mockMarket";
 import { formatShare, formatTokens, walletHolding } from "../lib/walletHoldings";
 import { useStore } from "../store";
 import { useUi } from "../ui";
-import { Copy, DownloadSimple, LinkSimple, Plus, Trash } from "@phosphor-icons/react";
+import { Article, CheckSquare, ClipboardText, Copy, CurrencyCircleDollar, DownloadSimple, FileText, LinkSimple, Plus, Rocket, ShareNetwork, Trash, Users, Wallet } from "@phosphor-icons/react";
 import type { AssetPack, BillingStatus, Contact, LaunchKind, LineItem, LineStatus, PhaseId, SocialAccount, SupplyPct, SupplyRoute, TreasuryKey, Wallet } from "../types";
+
+function editToken(id: string, focus: string) {
+  return `/projects/${id}?tab=brief&edit=1&focus=${focus}`;
+}
+
+function CopyValue({ text, copy, mono }: { text: string; copy?: string; mono?: boolean }) {
+  return (
+    <span className="copy-line">
+      <strong className={mono ? "mono" : undefined}>{text}</strong>
+      <CopyIcon text={copy ?? text} />
+    </span>
+  );
+}
+
+function Fact({ label, text, copy, mono, onSet, className }: { label: string; text: string; copy?: string; mono?: boolean; onSet?: () => void; className?: string }) {
+  const missing = !text.trim() || text === "—" || text === "Not set";
+  const body = (
+    <>
+      <span className="tiny">{label}</span>
+      {missing ? <strong>Not set</strong> : <CopyValue text={text} copy={copy} mono={mono} />}
+    </>
+  );
+  if (missing && onSet) return <button type="button" className={className ? `set-cell ${className}` : "set-cell"} onClick={onSet}>{body}</button>;
+  return <div className={className}>{body}</div>;
+}
 
 export function ProjectPage() {
   const { id } = useParams();
@@ -58,16 +85,40 @@ export function ProjectPage() {
         </label>
         <div className="desk-copy">
           <div className="kicker">
-            <span>{tickerOf(project.ticker)}</span>
-            <span className="brand-bit">{chainLogo(project.chain) && <img className="mark-logo" src={chainLogo(project.chain)} alt="" />}{project.chain}</span>
-            <span className="brand-bit">{pad?.logo && <img className="mark-logo" src={pad.logo} alt="" />}{pad?.name || "On-chain"}</span>
+            {project.ticker.trim() ? (
+              <span className="copy-line"><span>{tickerOf(project.ticker)}</span><CopyIcon text={tickerOf(project.ticker)} /></span>
+            ) : (
+              <button type="button" className="text-set" onClick={() => router.push(editToken(project.id, "ticker"))}>Not set</button>
+            )}
+            <span className="copy-line brand-bit"><span className="brand-bit">{chainLogo(project.chain) && <img className="mark-logo" src={chainLogo(project.chain)} alt="" />}{project.chain}</span><CopyIcon text={project.chain} /></span>
+            {pad ? (
+              <span className="copy-line brand-bit"><span className="brand-bit">{pad.logo && <img className="mark-logo" src={pad.logo} alt="" />}{pad.name}</span><CopyIcon text={pad.name} /></span>
+            ) : (
+              <span className="brand-bit">On-chain</span>
+            )}
           </div>
-          <h1 className="display">{project.name}</h1>
+          <h1 className="display copy-line"><span>{project.name}</span><CopyIcon text={project.name} /></h1>
           <div className="desk-token">
-            <div><span className="tiny">Contract</span><span className="mono" title={project.contract}>{shortAddress(project.contract)}</span></div>
-            <div><span className="tiny">Supply</span><span title={project.supply}>{project.supply || "—"}</span></div>
-            <div><span className="tiny">Owner</span><span>{project.client || "—"}</span></div>
-            <div><span className="tiny">Target</span><span>{formatDay(project.targetDate)}</span></div>
+            {project.contract.trim() ? (
+              <div><span className="tiny">Contract</span><span className="copy-line"><span className="mono" title={project.contract}>{shortAddress(project.contract)}</span><CopyIcon text={project.contract} /></span></div>
+            ) : (
+              <button type="button" className="set-cell" onClick={() => router.push(editToken(project.id, "contract"))}><span className="tiny">Contract</span><strong>Not set</strong></button>
+            )}
+            {project.supply.trim() ? (
+              <div><span className="tiny">Supply</span><span className="copy-line"><span title={project.supply}>{project.supply}</span><CopyIcon text={project.supply} /></span></div>
+            ) : (
+              <button type="button" className="set-cell" onClick={() => router.push(editToken(project.id, "supply"))}><span className="tiny">Supply</span><strong>Not set</strong></button>
+            )}
+            {project.client.trim() ? (
+              <div><span className="tiny">Owner</span><span className="copy-line"><span>{project.client}</span><CopyIcon text={project.client} /></span></div>
+            ) : (
+              <button type="button" className="set-cell" onClick={() => router.push(editToken(project.id, "owner"))}><span className="tiny">Owner</span><strong>Not set</strong></button>
+            )}
+            {project.targetDate ? (
+              <div><span className="tiny">Target</span><span className="copy-line"><span>{formatDay(project.targetDate)}</span><CopyIcon text={formatDay(project.targetDate)} /></span></div>
+            ) : (
+              <button type="button" className="set-cell" onClick={() => router.push(editToken(project.id, "target"))}><span className="tiny">Target</span><strong>Not set</strong></button>
+            )}
           </div>
           <div className="desk-meta cluster">
             <Select tight value={project.launch || "meme"} onChange={(value) => store.updateProject(project.id, { launch: value as LaunchKind, utility: value === "meme" ? "" : project.utility })} options={LAUNCH_KINDS.map((item) => ({ value: item.id, label: item.group }))} />
@@ -90,15 +141,15 @@ export function ProjectPage() {
         value={tab}
         onChange={(next) => router.push(`/projects/${project.id}?tab=${next}`)}
         tabs={[
-          { id: "desk", label: "Project" },
-          { id: "brief", label: "Details" },
-          { id: "wallets", label: "Wallets", count: project.wallets.length },
-          { id: "socials", label: "Socials", count: project.socials?.length || 0 },
-          { id: "contacts", label: "Contacts", count: project.contactIds?.length || 0 },
-          { id: "quote", label: "Plan", count: project.lineItems.length },
-          { id: "checks", label: "Checklist", count: project.checks.length - done },
-          { id: "flow", label: "Money" },
-          { id: "statement", label: "Summary" },
+          { id: "desk", label: "Project", icon: Rocket },
+          { id: "brief", label: "Details", icon: Article },
+          { id: "wallets", label: "Wallets", icon: Wallet, count: project.wallets.length },
+          { id: "socials", label: "Socials", icon: ShareNetwork, count: project.socials?.length || 0 },
+          { id: "contacts", label: "Contacts", icon: Users, count: project.contactIds?.length || 0 },
+          { id: "quote", label: "Plan", icon: ClipboardText, count: project.lineItems.length },
+          { id: "checks", label: "Checklist", icon: CheckSquare, count: project.checks.length - done },
+          { id: "flow", label: "Money", icon: CurrencyCircleDollar },
+          { id: "statement", label: "Summary", icon: FileText },
         ]}
       />
       <div className="desk-fit">
@@ -180,7 +231,7 @@ function Desk({ projectId, onWallet, onEditLine }: { projectId: string; onWallet
         return (
           <button key={lane.id} type="button" className="lane-tile" onClick={() => openPhase(lane.id)}>
             <div className="spread">
-              <span className="tiny">{lane.n} · {lane.label}</span>
+              <span className="lane-name">{lane.n} · {lane.label}</span>
               <span className="tiny">Checklist</span>
             </div>
             <div className="figure">{done}/{checks.length}</div>
@@ -208,10 +259,14 @@ function Desk({ projectId, onWallet, onEditLine }: { projectId: string; onWallet
 function LaneBody({ lane, projectId, onWallet, onEditLine }: { lane: (typeof DESK_LANES)[number]; projectId: string; onWallet: () => void; onEditLine: (line: LineItem) => void }) {
   const { store, project } = useProject(projectId);
   const quote = projectQuote(project, store.settings);
+  const params = useSearchParams();
   const t = project.treasury;
   const set = (patch: Partial<typeof t>) => store.updateProject(project.id, { treasury: { ...t, ...patch } });
+  const asked = params.get("step");
+  const [step, setStep] = useState<null | "fee" | "supply" | "volume" | "mm" | "wallets">(
+    asked === "fee" || asked === "supply" || asked === "volume" || asked === "mm" || asked === "wallets" ? asked : null,
+  );
   const posted = (key: TreasuryKey) => project.lineItems.some((line) => line.meta?.treasuryKey === key);
-  const [step, setStep] = useState<null | "fee" | "supply" | "volume" | "mm" | "wallets">(null);
   const supplyRow = SUPPLY_ROWS.find((row) => row.pct === t.supplyPct);
   const supplyEth = supplyRow && t.route ? supplyRow[t.route] : null;
   const rows = quote.rows.filter((row) => row.line.phase === lane.id);
@@ -308,10 +363,9 @@ function LaneBody({ lane, projectId, onWallet, onEditLine }: { lane: (typeof DES
   );
 
   const showLines = rows.length > 0;
-  const showChecks = checks.length > 0;
-  const tuckTools = hasTools && showLines && showChecks;
+  const tuckTools = hasTools && showLines;
   const toolPane = hasTools && !tuckTools;
-  const panes = Number(showLines) + Number(showChecks) + Number(toolPane);
+  const panes = Number(showLines) + 1 + Number(toolPane);
   const plan = <div className="lane-foot"><span className="tiny">Plan</span><strong>{formatUsd(usd)}</strong></div>;
 
   return (
@@ -330,52 +384,79 @@ function LaneBody({ lane, projectId, onWallet, onEditLine }: { lane: (typeof DES
           {plan}
         </section>
       )}
-      {showChecks && (
-        <section className="card phase-sheet">
-          <div className="tiny">Checklist</div>
-          <div className="line-fill">
-            {checks.map((check) => (
-              <div key={check.id} className="list-row"><span>{check.text}</span><b className="num">{check.done ? "Done" : "Open"}</b></div>
-            ))}
-          </div>
-          {tuckTools && <div className="phase-tools">{tools}</div>}
-          {!showLines && !toolPane && plan}
-        </section>
-      )}
       {toolPane && (
         <section className="card phase-sheet">
           <div className="phase-tools">{tools}</div>
           {plan}
         </section>
       )}
-      {!showLines && !showChecks && !hasTools && <p className="muted line-empty">Nothing posted in this lane.</p>}
+      <section className="card phase-sheet">
+        <div className="tiny">Checklist</div>
+        <div className="line-fill">
+          {checks.length === 0 && <p className="muted line-empty">No checks in this phase.</p>}
+          {checks.map((check) => (
+            <div key={check.id} className="list-row"><span>{check.text}</span><b className="num">{check.done ? "Done" : "Open"}</b></div>
+          ))}
+        </div>
+        {tuckTools && <div className="phase-tools">{tools}</div>}
+        {!showLines && !toolPane && plan}
+      </section>
     </div>
   );
+}
+
+function planContacts(store: { services: { id: string; providerId: string; contactId?: string }[]; contacts: Contact[] }, project: { lineItems: LineItem[] }) {
+  const found = new Map<string, Contact>();
+  for (const line of project.lineItems) {
+    if (line.source !== "service") continue;
+    const service = line.refId ? store.services.find((item) => item.id === line.refId) : undefined;
+    const contactId = service?.contactId || store.services.find((item) => item.providerId === line.providerId && item.contactId)?.contactId;
+    if (!contactId || found.has(contactId)) continue;
+    const contact = store.contacts.find((item) => item.id === contactId);
+    if (contact) found.set(contactId, contact);
+  }
+  return [...found.values()];
 }
 
 function Brief({ projectId }: { projectId: string }) {
   const { store, project } = useProject(projectId);
   const router = useRouter();
-  const editing = useSearchParams().get("edit") === "1";
+  const search = useSearchParams();
+  const editing = search.get("edit") === "1";
   const pad = byId(store.platforms, project.launchpadId);
-  const providers = [...new Set(project.lineItems.map((line) => line.providerId).filter(Boolean))] as string[];
+  const contacts = planContacts(store, project);
   const closeEdit = () => router.push(`/projects/${project.id}?tab=brief`);
+  const open = (focus: string) => router.push(editToken(project.id, focus));
   return (
     <div className="fit-stack">
       <div className="brief-layout">
         <div className="brief-main">
-          {editing ? <BriefEditor embedded project={project} onClose={closeEdit} /> : (
+          {editing ? <BriefEditor embedded project={project} focus={search.get("focus")} onClose={closeEdit} /> : (
             <section className="card identity-card">
               <h2>Identity</h2>
               <div className="identity-fit">
                 <div className="identity-grid">
-                  <div><span className="tiny">Owner</span><strong>{project.client || "—"}</strong></div>
-                  <div><span className="tiny">Chain</span><strong className="brand-bit">{chainLogo(project.chain) && <img className="mark-logo" src={chainLogo(project.chain)} alt="" />}{project.chain || "—"}</strong></div>
-                  <div><span className="tiny">Launchpad</span><strong>{pad ? <Link href={`/platforms/${pad.id}`} className="brand-bit">{pad.logo && <img className="mark-logo" src={pad.logo} alt="" />}{pad.name}</Link> : "—"}</strong></div>
-                  <div><span className="tiny">Target</span><strong>{formatDay(project.targetDate)}</strong></div>
-                  <div><span className="tiny">Budget</span><strong>{project.budgetUsd ? formatUsd(project.budgetUsd) : "Not set"}</strong></div>
-                  <div><span className="tiny">Supply</span><strong>{project.supply || "—"}</strong></div>
-                  <div className="span-2"><span className="tiny">Contract</span><strong className="mono" title={project.contract || undefined}>{project.contract || "—"}</strong></div>
+                  <Fact label="Owner" text={project.client} onSet={() => open("owner")} />
+                  <div>
+                    <span className="tiny">Chain</span>
+                    <span className="copy-line">
+                      <strong className="brand-bit">{chainLogo(project.chain) && <img className="mark-logo" src={chainLogo(project.chain)} alt="" />}{project.chain || "—"}</strong>
+                      <CopyIcon text={project.chain} />
+                    </span>
+                  </div>
+                  <div>
+                    <span className="tiny">Launchpad</span>
+                    {pad ? (
+                      <span className="copy-line">
+                        <Link href={`/platforms/${pad.id}`} className="brand-bit">{pad.logo && <img className="mark-logo" src={pad.logo} alt="" />}{pad.name}</Link>
+                        <CopyIcon text={pad.name} />
+                      </span>
+                    ) : <strong>—</strong>}
+                  </div>
+                  <Fact label="Target" text={project.targetDate ? formatDay(project.targetDate) : ""} onSet={() => open("target")} />
+                  <Fact label="Budget" text={project.budgetUsd ? formatUsd(project.budgetUsd) : ""} copy={project.budgetUsd ? String(project.budgetUsd) : ""} onSet={() => open("budget")} />
+                  <Fact label="Supply" text={project.supply} onSet={() => open("supply")} />
+                  <Fact className="span-2" label="Contract" text={project.contract} mono onSet={() => open("contract")} />
                 </div>
                 <MarketBoard id={project.id} />
                 {project.notes && <p className="muted identity-note">{project.notes}</p>}
@@ -385,21 +466,16 @@ function Brief({ projectId }: { projectId: string }) {
         </div>
         <div className="brief-side">
           <section className="card hold">
-            <div className="tiny">Sellers on this plan</div>
+            <div className="tiny">Contacts</div>
             <div className="line-fill">
-              {providers.length === 0 && <p className="muted line-empty">Add a line and the seller shows up here.</p>}
-              {providers.map((id) => {
-                const provider = byId(store.providers, id);
-                if (!provider) return null;
-                const mark = deskMark(provider, store.platforms);
-                return (
-                  <Link key={id} href={`/providers/${id}`} className="list-row seller-row">
-                    <span className="token-logo sm">{mark ? <img src={mark} alt="" /> : initials(provider.name)}</span>
-                    <span>{provider.name}</span>
-                    <span className="tiny">{provider.role}</span>
-                  </Link>
-                );
-              })}
+              {contacts.length === 0 && <p className="muted line-empty">No contact on these services.</p>}
+              {contacts.map((contact) => (
+                <Link key={contact.id} href={`/contacts/${contact.id}`} className="list-row seller-row">
+                  <span className="token-logo sm">{contact.image ? <img src={contact.image} alt="" /> : initials(contact.name)}</span>
+                  <span>{contact.name}</span>
+                  <span className="tiny">{contact.company || contact.title || "—"}</span>
+                </Link>
+              ))}
             </div>
           </section>
           <PackBoard kind="logo" projectId={project.id} />
@@ -722,11 +798,11 @@ function People({ projectId }: { projectId: string }) {
                 </div>
                 <div>
                   <span className="tiny">Email</span>
-                  {active.email ? <a href={href(active.email)}>{active.email}</a> : <strong>—</strong>}
+                  {active.email ? <span className="copy-line"><a href={href(active.email)}>{active.email}</a><CopyIcon text={active.email} /></span> : <Link className="text-set" href={`/contacts/${active.id}/edit`}>Not set</Link>}
                 </div>
                 <div>
                   <span className="tiny">Phone</span>
-                  {whatsappHref(active.phone) ? <a href={whatsappHref(active.phone)} target="_blank" rel="noreferrer">{active.phone}</a> : <strong>{active.phone || "—"}</strong>}
+                  {whatsappHref(active.phone) ? <span className="copy-line"><a href={whatsappHref(active.phone)} target="_blank" rel="noreferrer">{active.phone}</a><CopyIcon text={active.phone} /></span> : <Link className="text-set" href={`/contacts/${active.id}/edit`}>Not set</Link>}
                 </div>
                 <div>
                   <span className="tiny">On the plan</span>
@@ -792,6 +868,7 @@ function People({ projectId }: { projectId: string }) {
 
 function Wallets({ projectId, onAdd, onEdit }: { projectId: string; onAdd: (group: "hot" | "supply") => void; onEdit: (wallet: Wallet) => void }) {
   const { store, project } = useProject(projectId);
+  const router = useRouter();
   const [shown, setShown] = useState<Record<string, boolean>>({});
   const [dropWallet, setDropWallet] = useState<Wallet | null>(null);
   const [who, setWho] = useState<string | null>(null);
@@ -846,12 +923,16 @@ function Wallets({ projectId, onAdd, onEdit }: { projectId: string; onAdd: (grou
               <div className="wallet-detail">
                 <div className="span-2">
                   <span className="tiny brand-bit">{project.logo ? <img className="mark-logo" src={project.logo} alt="" /> : null}{tickerOf(project.ticker)} held</span>
-                  <b className="figure">{book && book.tokens != null ? formatTokens(book.tokens) : "Not set"}</b>
+                  {book && book.tokens != null ? <b className="figure">{formatTokens(book.tokens)}</b> : (
+                    <button type="button" className="text-set figure" onClick={() => active.group === "supply" ? router.push(`/projects/${project.id}?tab=desk&phase=startup&step=supply`) : onEdit(active)}>Not set</button>
+                  )}
                   <span className="tiny">{book?.share == null ? "Share not set" : `${formatShare(book.share)} of supply${book.tokenUsd == null ? "" : ` · ${formatCompactUsd(book.tokenUsd)}`}`}</span>
                 </div>
                 <div>
                   <span className="tiny">ETH</span>
-                  <b className="figure">{book?.eth == null ? "Not set" : formatEth(book.eth)}</b>
+                  {book?.eth == null ? (
+                    <button type="button" className="text-set figure" onClick={() => active.group === "supply" ? router.push(`/projects/${project.id}?tab=desk&phase=startup&step=supply`) : onEdit(active)}>Not set</button>
+                  ) : <b className="figure">{formatEth(book.eth)}</b>}
                   <span className="tiny">{book?.ethUsd == null ? "—" : formatUsd(book.ethUsd)}</span>
                 </div>
                 <div>
@@ -869,13 +950,14 @@ function Wallets({ projectId, onAdd, onEdit }: { projectId: string; onAdd: (grou
                 </div>
                 <div className="span-2">
                   <span className="tiny">Address</span>
-                  <strong className="mono" title={active.address || undefined}>{active.address || "—"}</strong>
+                  {active.address ? <CopyValue text={active.address} mono /> : <button type="button" className="text-set" onClick={() => onEdit(active)}>Not set</button>}
                 </div>
                 <div className="span-2">
                   <span className="tiny">Key</span>
                   <div className="key-line">
                     <strong className="mono">{open ? (key || "—") : "••••••••"}</strong>
                     <button type="button" className="secret-show" onClick={() => setShown((current) => ({ ...current, [active.id]: !current[active.id] }))}>{open ? "Hide" : "Show"}</button>
+                    {key ? <CopyIcon text={key} /> : <button type="button" className="text-set" onClick={() => onEdit(active)}>Not set</button>}
                   </div>
                 </div>
               </div>
@@ -904,7 +986,6 @@ function Socials({ projectId, onAdd, onEdit }: { projectId: string; onAdd: () =>
   const active = rows.find((social) => social.id === who) || rows[0];
   const open = active ? Boolean(shown[active.id]) : false;
   const link = active ? href(active.url) : "";
-  const logo = active ? socialLogo(active.name) : "";
   return (
     <div className="fit-stack">
       <div className="check-split">
@@ -915,10 +996,9 @@ function Socials({ projectId, onAdd, onEdit }: { projectId: string; onAdd: () =>
           </div>
           <div className="line-fill">
             {rows.length === 0 ? <p className="muted line-empty">No socials.</p> : rows.map((social) => {
-              const mark = socialLogo(social.name);
               return (
                 <button key={social.id} type="button" className={active?.id === social.id ? "list-row seller-row on" : "list-row seller-row"} onClick={() => setWho(social.id)}>
-                  <span className="token-logo sm">{mark ? <img src={mark} alt="" /> : initials(social.name)}</span>
+                  <span className="token-logo sm">{hasSocialMark(social.name) ? <SocialMark name={social.name} /> : initials(social.name)}</span>
                   <span>{social.name}</span>
                   <span className="tiny">{social.handle || "—"}</span>
                 </button>
@@ -930,7 +1010,7 @@ function Socials({ projectId, onAdd, onEdit }: { projectId: string; onAdd: () =>
           {active ? (
             <>
               <div className="spread">
-                <h2 className="brand-bit">{logo ? <img className="mark-logo" src={logo} alt="" /> : null}{active.name}</h2>
+                <h2 className="brand-bit"><SocialMark name={active.name} size={18} />{active.name}</h2>
                 <div className="cluster">
                   {link ? <a className="btn btn-small" href={link} target="_blank" rel="noreferrer">Open</a> : null}
                   <button type="button" className="btn btn-small" onClick={() => onEdit(active)}>Edit</button>
@@ -939,21 +1019,22 @@ function Socials({ projectId, onAdd, onEdit }: { projectId: string; onAdd: () =>
               <div className="wallet-detail social-detail">
                 <div>
                   <span className="tiny">Handle</span>
-                  <strong>{active.handle || "—"}</strong>
+                  {active.handle ? <CopyValue text={active.handle} /> : <button type="button" className="text-set" onClick={() => onEdit(active)}>Not set</button>}
                 </div>
                 <div>
                   <span className="tiny">Network</span>
-                  <strong>{active.name}</strong>
+                  <CopyValue text={active.name} />
                 </div>
                 <div className="span-2">
                   <span className="tiny">Link</span>
-                  {link ? <a href={link} target="_blank" rel="noreferrer" title={active.url}>{link.replace(/^https?:\/\//, "").replace(/\/$/, "")}</a> : <strong>—</strong>}
+                  {link ? <span className="copy-line"><a href={link} target="_blank" rel="noreferrer" title={active.url}>{link.replace(/^https?:\/\//, "").replace(/\/$/, "")}</a><CopyIcon text={active.url} /></span> : <button type="button" className="text-set" onClick={() => onEdit(active)}>Not set</button>}
                 </div>
                 <div className="span-2">
                   <span className="tiny">Password</span>
                   <div className="key-line">
                     <strong className="mono">{open ? (active.password || "—") : "••••••••"}</strong>
                     <button type="button" className="secret-show" onClick={() => setShown((current) => ({ ...current, [active.id]: !current[active.id] }))}>{open ? "Hide" : "Show"}</button>
+                    {active.password ? <CopyIcon text={active.password} /> : <button type="button" className="text-set" onClick={() => onEdit(active)}>Not set</button>}
                   </div>
                 </div>
                 <div className="span-2">
@@ -1026,7 +1107,7 @@ function Checks({ projectId }: { projectId: string }) {
           <div className="line-fill">
             {rows.length === 0 ? <p className="muted line-empty">No checks in {current.label} yet.</p> : rows.map((check) => (
               <div key={check.id} className="list-row task">
-                <button type="button" className="box" aria-label={check.done ? "Mark open" : "Mark done"} onClick={() => store.toggleCheck(project.id, check.id)}>{check.done ? "✓" : ""}</button>
+                <button type="button" className={check.done ? "box on" : "box"} aria-label={check.done ? "Mark open" : "Mark done"} onClick={() => store.toggleCheck(project.id, check.id)} />
                 <span>{check.text}</span>
                 <button type="button" className="btn btn-small" onClick={() => setDrop(check.id)}>Remove</button>
               </div>
@@ -1047,6 +1128,7 @@ function Checks({ projectId }: { projectId: string }) {
 
 function Flow({ projectId }: { projectId: string }) {
   const { store, project } = useProject(projectId);
+  const router = useRouter();
   const quote = projectQuote(project, store.settings);
   const lanes: PhaseId[] = [
     ...WORK_LANES.map((lane) => lane.id),
@@ -1055,8 +1137,24 @@ function Flow({ projectId }: { projectId: string }) {
   const amount = (id: PhaseId) => quote.rows.filter((row) => row.line.phase === id).reduce((sum, row) => sum + row.usd, 0);
   const richest = lanes.reduce((best, id) => (amount(id) > amount(best) ? id : best), lanes[0]);
   const [picked, setPicked] = useState<PhaseId | null>(null);
+  const [side, setSide] = useState<"spend" | "earned">("spend");
+  const [earnNote, setEarnNote] = useState("");
+  const [earnAmount, setEarnAmount] = useState("");
   const current = picked && lanes.includes(picked) ? picked : richest;
+  const entries = earningEntries(project).filter((item) => item.phase === current);
   const items = quote.rows.filter((row) => row.line.phase === current);
+  const addEarning = () => {
+    const amountValue = Number(earnAmount.replace(/[^0-9.]/g, ""));
+    if (!amountValue) return;
+    store.updateProject(project.id, {
+      earnings: [...earningEntries(project), { id: uid("earn"), phase: current, amount: amountValue, note: earnNote.trim() }],
+    });
+    setEarnNote("");
+    setEarnAmount("");
+  };
+  const removeEarning = (id: string) => {
+    store.updateProject(project.id, { earnings: earningEntries(project).filter((item) => item.id !== id) });
+  };
   const markOf = (line: LineItem) => {
     if (line.source === "package" && line.refId) {
       const pack = byId(store.packages, line.refId);
@@ -1080,7 +1178,7 @@ function Flow({ projectId }: { projectId: string }) {
                 <button key={id} type="button" className={current === id ? "list-row phase-row on" : "list-row phase-row"} onClick={() => setPicked(id)}>
                   <i className="swatch" style={{ background: PHASE_COLOR[id] }} />
                   <span>{phaseOf(id).label}</span>
-                  <b className="num">{formatUsd(amount(id))}</b>
+                  <b className={side === "earned" && earnedIn(project, id) > 0 ? "num sage" : "num"}>{formatUsd(side === "spend" ? amount(id) : earnedIn(project, id))}</b>
                 </button>
               ))}
             </div>
@@ -1094,7 +1192,7 @@ function Flow({ projectId }: { projectId: string }) {
                 <div><span className="tiny">Remaining</span><strong>{formatUsd(quote.balanceUsd)}</strong></div>
               </div>
               <div className="money-grid">
-                <div><span className="tiny">Budget</span><strong>{project.budgetUsd ? formatUsd(project.budgetUsd) : "Not set"}</strong></div>
+                <Fact label="Budget" text={project.budgetUsd ? formatUsd(project.budgetUsd) : ""} copy={project.budgetUsd ? String(project.budgetUsd) : ""} onSet={() => router.push(editToken(project.id, "budget"))} />
                 <div><span className="tiny">Subtotal</span><strong>{formatUsd(quote.subtotalUsd)}</strong></div>
                 <div><span className="tiny">Discount</span><strong className="clay">−{formatUsd(quote.discountUsd)}</strong></div>
                 <div><span className="tiny">Open</span><strong>{formatUsd(quote.unbilledUsd)}</strong></div>
@@ -1107,24 +1205,50 @@ function Flow({ projectId }: { projectId: string }) {
           </section>
         </div>
         <section className="card">
-          <div className="spread">
-            <h2>{phaseOf(current).label}</h2>
-            <span className="num">{formatUsd(amount(current))}</span>
+          <h2>{phaseOf(current).label}</h2>
+          <div className="phase-money-head" role="tablist">
+            <button type="button" role="tab" aria-selected={side === "spend"} className={side === "spend" ? "on" : ""} onClick={() => setSide("spend")}>
+              <span className="tiny">Spend</span>
+              <strong>{formatUsd(amount(current))}</strong>
+            </button>
+            <button type="button" role="tab" aria-selected={side === "earned"} className={side === "earned" ? "on" : ""} onClick={() => setSide("earned")}>
+              <span className="tiny">Earned</span>
+              <strong className={earnedIn(project, current) > 0 ? "sage" : ""}>{formatUsd(earnedIn(project, current))}</strong>
+            </button>
           </div>
-          <div className="line-fill">
-            {items.length === 0 ? <p className="muted line-empty">Nothing posted in this phase.</p> : items.map(({ line, gross }) => {
-              const mark = markOf(line);
-              const pay = BILLING.find((item) => item.id === line.billing)?.label || "—";
-              return (
-                <div key={line.id} className="list-row money-row">
-                  <span className="token-logo sm">{mark ? <img src={mark} alt="" /> : initials(line.name)}</span>
-                  <span>{line.name}</span>
-                  <span className="tiny">{pay}</span>
-                  <b className="num">{money(gross, line.currency)}</b>
-                </div>
-              );
-            })}
-          </div>
+          {side === "spend" ? (
+            <div className="line-fill">
+              {items.length === 0 ? <p className="muted line-empty">Nothing posted in this phase.</p> : items.map(({ line, gross }) => {
+                const mark = markOf(line);
+                const pay = BILLING.find((item) => item.id === line.billing)?.label || "—";
+                return (
+                  <div key={line.id} className="list-row money-row">
+                    <span className="token-logo sm">{mark ? <img src={mark} alt="" /> : initials(line.name)}</span>
+                    <span>{line.name}</span>
+                    <span className="tiny">{pay}</span>
+                    <b className="num">{money(gross, line.currency)}</b>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <>
+              <div className="line-fill">
+                {entries.length === 0 ? <p className="muted line-empty">No earnings in this phase.</p> : entries.map((entry) => (
+                  <div key={entry.id} className="list-row earn-row">
+                    <span>{entry.note || "Earning"}</span>
+                    <b className="num sage">{formatUsd(entry.amount)}</b>
+                    <button type="button" className="btn btn-small" onClick={() => removeEarning(entry.id)}>Remove</button>
+                  </div>
+                ))}
+              </div>
+              <form className="earn-add" onSubmit={(event) => { event.preventDefault(); addEarning(); }}>
+                <input className="input" placeholder="Note" value={earnNote} onChange={(event) => setEarnNote(event.target.value)} />
+                <input className="input" inputMode="decimal" placeholder="Amount" value={earnAmount} onChange={(event) => setEarnAmount(event.target.value.replace(/[^0-9.]/g, ""))} />
+                <button className="btn btn-small" type="submit">Add</button>
+              </form>
+            </>
+          )}
         </section>
       </div>
     </div>
@@ -1142,6 +1266,7 @@ function FieldLike({ label, value, onChange }: { label: string; value: number; o
 
 function Statement({ projectId }: { projectId: string }) {
   const { store, project } = useProject(projectId);
+  const router = useRouter();
   const quote = projectQuote(project, store.settings);
   const pad = byId(store.platforms, project.launchpadId);
   const status = PROJECT_STATUSES.find((item) => item.id === project.status)?.label || project.status;
@@ -1153,13 +1278,19 @@ function Statement({ projectId }: { projectId: string }) {
           <section className="card">
             <h2>Token</h2>
             <div className="summary-facts">
-              <div><span className="tiny">Owner</span><strong>{project.client || "—"}</strong></div>
-              <div><span className="tiny">Chain</span><strong className="brand-bit">{chainLogo(project.chain) && <img className="mark-logo" src={chainLogo(project.chain)} alt="" />}{project.chain || "—"}</strong></div>
-              <div><span className="tiny">Launchpad</span><strong>{pad?.name || "—"}</strong></div>
-              <div><span className="tiny">Target</span><strong>{formatDay(project.targetDate)}</strong></div>
-              <div><span className="tiny">Supply</span><strong>{project.supply || "—"}</strong></div>
+              <Fact label="Owner" text={project.client} onSet={() => router.push(editToken(project.id, "owner"))} />
+              <div>
+                <span className="tiny">Chain</span>
+                <span className="copy-line">
+                  <strong className="brand-bit">{chainLogo(project.chain) && <img className="mark-logo" src={chainLogo(project.chain)} alt="" />}{project.chain || "—"}</strong>
+                  <CopyIcon text={project.chain} />
+                </span>
+              </div>
+              <div><span className="tiny">Launchpad</span>{pad?.name ? <CopyValue text={pad.name} /> : <strong>—</strong>}</div>
+              <Fact label="Target" text={project.targetDate ? formatDay(project.targetDate) : ""} onSet={() => router.push(editToken(project.id, "target"))} />
+              <Fact label="Supply" text={project.supply} onSet={() => router.push(editToken(project.id, "supply"))} />
               <div><span className="tiny">Status</span><strong>{status}</strong></div>
-              <div className="span-3"><span className="tiny">Contract</span><strong className="mono" title={project.contract || undefined}>{project.contract || "—"}</strong></div>
+              <Fact className="span-3" label="Contract" text={project.contract} mono onSet={() => router.push(editToken(project.id, "contract"))} />
             </div>
             {project.notes && <p className="summary-note">{project.notes}</p>}
           </section>
@@ -1172,7 +1303,7 @@ function Statement({ projectId }: { projectId: string }) {
                 <div><span className="tiny">Remaining</span><strong>{formatUsd(quote.balanceUsd)}</strong></div>
               </div>
               <div className="money-grid">
-                <div><span className="tiny">Budget</span><strong>{project.budgetUsd ? formatUsd(project.budgetUsd) : "Not set"}</strong></div>
+                <Fact label="Budget" text={project.budgetUsd ? formatUsd(project.budgetUsd) : ""} copy={project.budgetUsd ? String(project.budgetUsd) : ""} onSet={() => router.push(editToken(project.id, "budget"))} />
                 <div><span className="tiny">Subtotal</span><strong>{formatUsd(quote.subtotalUsd)}</strong></div>
                 <div><span className="tiny">Discount</span><strong className="clay">−{formatUsd(quote.discountUsd)}</strong></div>
                 <div><span className="tiny">Open</span><strong>{formatUsd(quote.unbilledUsd)}</strong></div>

@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Plus, Trash } from "@phosphor-icons/react";
-import { socialLogo } from "../lib/brands";
+import { SocialMark, hasSocialMark } from "./SocialMark";
 import { tickerOf } from "../lib/format";
 import { PROJECT_STATUSES, SOCIAL_NAMES } from "../lib/labels";
 import { uid } from "../lib/id";
@@ -117,10 +117,9 @@ export function ContactEditor({ open, initial, onClose, onSaved, page }: { open:
       </div>
       <div className="line-fill">
         {[...named, ...extras].map((slot) => {
-          const logo = socialLogo(slot.name);
           return (
             <div key={slot.key} className="list-row social-edit">
-              <span className="token-logo sm">{logo ? <img src={logo} alt="" /> : initials(slot.name || "Link")}</span>
+              <span className="token-logo sm">{hasSocialMark(slot.name) ? <SocialMark name={slot.name} /> : initials(slot.name || "Link")}</span>
               {slot.custom ? (
                 <input className="cell-input" value={slot.link.name} placeholder="Network" onChange={(event) => setLink(slot.link.id, { name: event.target.value })} />
               ) : (
