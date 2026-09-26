@@ -65,6 +65,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const trail = trailFor(pathname);
   const back = [...trail].reverse().find((item) => item.href);
+  const plain = pathname === "/" || pathname === "/projects";
 
   return (
     <div className="shell">
@@ -96,14 +97,16 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="main">
         <header className="topbar">
           {back && <Link href={back.href!} className="btn back"><ArrowLeft size={16} />Back</Link>}
-          <div className="crumb">
-            {trail.map((item, index) => (
-              <Fragment key={`${item.label}-${index}`}>
-                {index > 0 && <span className="crumb-sep">/</span>}
-                {item.href ? <Link href={item.href}>{item.label}</Link> : <strong>{item.label}</strong>}
-              </Fragment>
-            ))}
-          </div>
+          {!plain && (
+            <div className="crumb">
+              {trail.map((item, index) => (
+                <Fragment key={`${item.label}-${index}`}>
+                  {index > 0 && <span className="crumb-sep">/</span>}
+                  {item.href ? <Link href={item.href}>{item.label}</Link> : <strong>{item.label}</strong>}
+                </Fragment>
+              ))}
+            </div>
+          )}
           <div className="search" ref={box}>
             <MagnifyingGlass className="search-icon" size={16} />
             <input

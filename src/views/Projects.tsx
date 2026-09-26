@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus } from "@phosphor-icons/react";
 import { ProjectCard, ProjectTable } from "../components/ProjectCard";
-import { Empty, PageHead, Select, Tabs, ViewSwitch } from "../components/ui";
+import { Empty, Select, Tabs, ViewSwitch } from "../components/ui";
 import { LAUNCH_KINDS, PROJECT_STATUSES } from "../lib/labels";
 import { useStore } from "../store";
 import type { LaunchKind, ProjectStatus } from "../types";
@@ -21,8 +21,7 @@ export function Projects() {
   });
 
   return (
-    <div className="page">
-      <PageHead kicker="List" title="Projects" lede="Meme, utility, vamped, and community takeovers each keep their own list." actions={<Link className="btn btn-primary" href="/projects/new"><Plus size={16} weight="bold" />New project</Link>} />
+    <div className="page screen">
       <div className="tool-bar">
         <Tabs
           value={kind}
@@ -38,6 +37,7 @@ export function Projects() {
           <ViewSwitch value={view} onChange={setView} />
         </div>
       </div>
+      <div className="desk-fit">
       {rows.length === 0 ? (
         <Empty title="No projects" text="Start a worksheet, or clear the filter." action={<Link className="btn btn-primary" href="/projects/new"><Plus size={16} weight="bold" />New project</Link>} />
       ) : view === "table" ? (
@@ -47,6 +47,7 @@ export function Projects() {
           {rows.map((project) => <ProjectCard key={project.id} project={project} />)}
         </div>
       )}
+      </div>
     </div>
   );
 }

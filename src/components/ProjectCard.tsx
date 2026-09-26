@@ -23,7 +23,7 @@ export function ProjectCard({ project }: { project: Project }) {
           <div className="tiny">{tickerOf(project.ticker)} · {project.chain} · {tag}</div>
         </div>
         <Pill tone={projectTone(project.status)}>{PROJECT_STATUSES.find((item) => item.id === project.status)?.label || project.status}</Pill>
-        {project.notes ? <div className="tiny card-note">{project.notes}</div> : null}
+        <div className="tiny card-note">{project.notes}</div>
       </div>
       <MarketBoard id={project.id} />
       <div className="lane-grid">

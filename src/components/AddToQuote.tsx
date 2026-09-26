@@ -5,7 +5,7 @@ import { money } from "../lib/format";
 import { uid } from "../lib/id";
 import { servicePriceLabel } from "../lib/price";
 import { useStore } from "../store";
-import type { LineItem, Service } from "../types";
+import type { LineItem, Package, Service } from "../types";
 import { useUi } from "../ui";
 import { ChipSelect, Field, Modal, Select } from "./ui";
 
@@ -18,6 +18,7 @@ export function AddToQuote() {
   const [packageId, setPackageId] = useState("");
   const [tierId, setTierId] = useState("");
   const [countries, setCountries] = useState<string[]>([]);
+  const [callers, setCallers] = useState<string[]>([]);
   const [cashtag, setCashtag] = useState("");
   const [qty, setQty] = useState("1");
   const [price, setPrice] = useState("0");
@@ -40,7 +41,8 @@ export function AddToQuote() {
     setProjectId(add.projectId || store.projects[0]?.id || "");
     setNotes("");
     setQty("1");
-    setCountries([]);
+    setCountries(add.countries || []);
+    setCallers(add.callers || []);
     setCashtag("");
     setAddRetainer(false);
     setWeeks("1");
@@ -158,6 +160,7 @@ export function AddToQuote() {
         });
       }
     } else if (pack) {
+      const chosen = pack.outlets.filter((item) => callers.includes(item.name) && item.price);
       store.addLine(
         projectId,
         {
@@ -177,6 +180,24 @@ export function AddToQuote() {
         },
         true,
       );
+      chosen.forEach((item) => {
+        store.addLine(projectId, {
+          id: uid("line"),
+          source: "custom",
+          refId: pack.id,
+          name: item.name,
+          phase: pack.phase,
+          detail: [item.group, item.note].filter(Boolean).join(" · "),
+          providerId: pack.providerId,
+          qty: 1,
+          unitPrice: item.price || 0,
+          currency: pack.currency,
+          status: "planned",
+          billing: "unbilled",
+          notes: "",
+          meta: { caller: item.name },
+        });
+      });
     } else {
       setError("Choose a service or package.");
       return;
@@ -212,7 +233,7 @@ export function AddToQuote() {
                     </button>
                   ))
                   : filteredPackages.map((item) => (
-                    <button key={item.id} type="button" className="btn btn-ghost" style={{ justifyContent: "space-between" }} onClick={() => applyPackage(item.id)}>
+                    <button key={item.id} type="button" className="btn btn-ghost" style={{ justifyContent: "space-between" }} onClick={() => { applyPackage(item.id); setCallers([]); }}>
                       <span>{item.name}</span>
                       <span className="tiny">{money(item.price, item.currency)}</span>
                     </button>
@@ -222,6 +243,9 @@ export function AddToQuote() {
           ) : (
             <Config
               service={service}
+              pack={pack}
+              callers={callers}
+              setCallers={setCallers}
               tierId={tierId}
               onTier={(id, nextPrice) => { setTierId(id); setPrice(String(nextPrice)); }}
               countries={countries}
@@ -258,6 +282,9 @@ export function AddToQuote() {
 
 function Config(props: {
   service?: Service;
+  pack?: Package;
+  callers: string[];
+  setCallers: (value: string[]) => void;
   tierId: string;
   onTier: (id: string, price: number) => void;
   countries: string[];
@@ -275,7 +302,10 @@ function Config(props: {
   addRetainer: boolean;
   setAddRetainer: (value: boolean) => void;
 }) {
-  const { service } = props;
+  const { service, pack } = props;
+  const roster = pack?.outlets.filter((item) => item.price) || [];
+  const callerSum = roster.filter((item) => props.callers.includes(item.name)).reduce((sum, item) => sum + (item.price || 0), 0);
+  const packageAmount = Number(props.price);
   return (
     <div className="stack">
       {service && service.tiers.length > 1 && (
@@ -308,11 +338,29 @@ function Config(props: {
           <input className="input" value={props.weeks} onChange={(event) => props.setWeeks(event.target.value)} />
         </Field>
       )}
+      {roster.length > 0 && (
+        <Field label={`Callers · ${props.callers.length}`} hint={callerSum ? money(callerSum, pack?.currency || "USD") : "None selected"}>
+          <div className="check-scroll" style={{ maxHeight: 220 }}>
+            {roster.map((item) => {
+              const on = props.callers.includes(item.name);
+              return (
+                <button key={item.name} type="button" className={on ? "btn btn-ghost on" : "btn btn-ghost"} style={{ justifyContent: "space-between" }} onClick={() => props.setCallers(on ? props.callers.filter((name) => name !== item.name) : [...props.callers, item.name])}>
+                  <span>{item.name}</span>
+                  <span>{money(item.price || 0, pack?.currency || "USD")}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+      )}
+      {roster.length > 0 && callerSum > 0 && Number.isFinite(packageAmount) && (
+        <p className="tiny">Package {money(packageAmount, pack?.currency || "USD")} + callers {money(callerSum, pack?.currency || "USD")} = {money(packageAmount + callerSum, pack?.currency || "USD")}</p>
+      )}
       <div className="form-grid">
         <Field label="Quantity">
           <input className="input" value={props.qty} onChange={(event) => props.setQty(event.target.value)} />
         </Field>
-        <Field label="Unit price">
+        <Field label={roster.length ? "Package price" : "Unit price"}>
           <input className="input" value={props.price} onChange={(event) => props.setPrice(event.target.value)} />
         </Field>
         <Field label="Notes" className="span-2">

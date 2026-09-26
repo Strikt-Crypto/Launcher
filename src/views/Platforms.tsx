@@ -28,7 +28,7 @@ export function Platforms() {
   const shown = groups.flatMap((group) => group.rows.map((platform) => ({ platform, kindLabel: group.label, kindShort: group.short })));
 
   return (
-    <div className="page">
+    <div className="page screen">
       <PageHead kicker="Where it launches" title="Platforms" lede="Launchpads, market terminals, wallets, and social. Pick the pad on the project." actions={<button type="button" className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={16} weight="bold" />New platform</button>} />
       <div className="tool-bar">
         <Tabs
@@ -45,6 +45,7 @@ export function Platforms() {
           <ViewSwitch value={view} onChange={setView} />
         </div>
       </div>
+      <div className="desk-fit">
       {shown.length === 0 && <Empty title="Nothing in this filter" text="Add a platform or switch the filter." />}
       {shown.length > 0 && (
         <section className="section">
@@ -94,6 +95,7 @@ export function Platforms() {
           )}
         </section>
       )}
+      </div>
       <PlatformEditor open={open} initial={null} onClose={() => setOpen(false)} />
     </div>
   );

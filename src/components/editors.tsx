@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { BILLING, CHAINS, CURRENCIES, LINE_STATUSES, PHASES, PLATFORM_KINDS, SERVICE_KINDS, SOCIAL_NAMES, WALLET_PURPOSES } from "../lib/labels";
 import { uid } from "../lib/id";
+import { initials } from "../lib/logo";
+import { packageMark, serviceMark } from "../lib/marks";
 import { includesToText, linesOf, linksToText, outletsToText, parseIncludes, parseLinks, parseOutlets, parseRequirements, requirementsToText } from "../lib/text";
 import { useStore } from "../store";
 import type { Currency, LineItem, Package, PhaseId, Platform, PlatformKind, Project, Provider, Service, ServiceKind, SocialAccount, Wallet } from "../types";
@@ -210,6 +212,109 @@ export function ServiceEditor({ open, initial, onClose, page }: { open: boolean;
   }
 
   const visiblePlatforms = store.platforms.filter((item) => item.name.toLowerCase().includes(platformQuery.toLowerCase()));
+  const phaseLabel = PHASES.find((item) => item.id === phase)?.label || phase;
+  const kindLabel = SERVICE_KINDS.find((item) => item.id === kind)?.label || kind;
+
+  if (page && confirming) {
+    return (
+      <div className="page screen">
+        <header className="card desk-head">
+          <div className="kicker">Service</div>
+          <h1 className="display">Remove this service?</h1>
+          <div className="desk-head-actions">
+            <button type="button" className="btn" onClick={() => setConfirming(false)}>Back</button>
+            <button type="button" className="btn btn-danger" onClick={() => { if (initial) store.deleteService(initial.id); onClose(); }}>Remove</button>
+          </div>
+        </header>
+      </div>
+    );
+  }
+
+  if (page) {
+    const logo = initial ? serviceMark(initial, store.platforms) : "";
+    return (
+      <form className="page screen" onSubmit={(event) => { event.preventDefault(); if (name.trim()) save(); }}>
+        <header className="card desk-head has-mark">
+          <span className="mark token-logo lg">{logo ? <img src={logo} alt="" /> : initials(name || "Service")}</span>
+          <div className="kicker">{phaseLabel} · {kindLabel}</div>
+          <input className="display name-field" value={name} placeholder="Name" required autoFocus onChange={(event) => setName(event.target.value)} />
+          <input className="lede summary-field" value={summary} placeholder="Summary" onChange={(event) => setSummary(event.target.value)} />
+          <div className="desk-head-actions">
+            {initial && <button type="button" className="btn btn-danger" onClick={() => setConfirming(true)}>Delete</button>}
+            <button className="btn btn-primary" type="submit" disabled={!name.trim()}>Save</button>
+          </div>
+        </header>
+        <div className="desk-fit">
+          <div className={`offer-board ${["one", "two", "three", "four"][Math.min(3, [true, !initial || requirements.trim(), !initial || rules.trim(), !initial || includes.trim() || details.trim()].filter(Boolean).length - 1)]}`}>
+            <section className="card">
+              <h2>Details</h2>
+              <div className="detail-grid short">
+                <div>
+                  <span className="tiny">Phase</span>
+                  <Select value={phase} onChange={(value) => setPhase(value as PhaseId)} options={PHASES.map((item) => ({ value: item.id, label: item.label }))} label="Phase" />
+                </div>
+                <div>
+                  <span className="tiny">Kind</span>
+                  <Select value={kind} onChange={(value) => setKind(value as ServiceKind)} options={SERVICE_KINDS.map((item) => ({ value: item.id, label: item.label }))} label="Kind" />
+                </div>
+                <div>
+                  <span className="tiny">Seller</span>
+                  <Select value={providerId} onChange={setProviderId} options={store.providers.map((item) => ({ value: item.id, label: item.name }))} label="Seller" />
+                </div>
+                <div>
+                  <span className="tiny">Price</span>
+                  <span className="price-line">
+                    <input className="cell-input" value={tierPrice} onChange={(event) => setTierPrice(event.target.value)} />
+                    <Select value={tierCurrency} onChange={(value) => setTierCurrency(value as Currency)} options={CURRENCIES.map((item) => ({ value: item, label: item }))} label="Currency" />
+                  </span>
+                </div>
+              </div>
+              <div className="line-fill">
+                <div className="list-row field plain"><span>Tier</span><input className="cell-input" value={tierLabel} onChange={(event) => setTierLabel(event.target.value)} /></div>
+                <div className="list-row field plain"><span>Duration</span><input className="cell-input" value={tierDuration} placeholder="Duration" onChange={(event) => setTierDuration(event.target.value)} /></div>
+                <div className="list-row field plain"><span>Weekly</span><input className="cell-input" value={recLabel} placeholder="Add-on label" onChange={(event) => setRecLabel(event.target.value)} /></div>
+                <div className="list-row field plain"><span>Weekly $</span><input className="cell-input" value={recPrice} placeholder="0" onChange={(event) => setRecPrice(event.target.value)} /></div>
+                <label className="list-row field plain"><span>Available</span><input type="checkbox" checked={available} onChange={(event) => setAvailable(event.target.checked)} /></label>
+                <label className="list-row field plain"><span>Open price</span><input type="checkbox" checked={openPrice} onChange={(event) => setOpenPrice(event.target.checked)} /></label>
+                <label className="list-row field plain"><span>Countries</span><input type="checkbox" checked={countryPick} onChange={(event) => setCountryPick(event.target.checked)} /></label>
+                {store.platforms.map((item) => (
+                  <label key={item.id} className="list-row field">
+                    <span className="token-logo sm">{item.logo ? <img src={item.logo} alt="" /> : initials(item.name)}</span>
+                    <span>{item.name}</span>
+                    <input type="checkbox" checked={platformIds.includes(item.id)} onChange={() => setPlatformIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id])} />
+                  </label>
+                ))}
+              </div>
+            </section>
+            {(!initial || requirements.trim()) && (
+              <section className="card note-pad">
+                <h2>Requirements</h2>
+                <textarea className="note-field" value={requirements} placeholder="One per line. Start a line with ! to mark it critical." onChange={(event) => setRequirements(event.target.value)} />
+              </section>
+            )}
+            {(!initial || rules.trim()) && (
+              <section className="card note-pad">
+                <h2>Rules</h2>
+                <textarea className="note-field" value={rules} placeholder="One rule per line" onChange={(event) => setRules(event.target.value)} />
+              </section>
+            )}
+            {(!initial || includes.trim() || details.trim()) && (
+              <section className="card note-pad">
+                {(!initial || includes.trim()) && (
+                  <>
+                    <h2>Includes</h2>
+                    <textarea className="note-field" value={includes} placeholder="Label | url | note" onChange={(event) => setIncludes(event.target.value)} />
+                  </>
+                )}
+                <h2>How it works</h2>
+                <textarea className="note-field" value={details} placeholder="How it works" onChange={(event) => setDetails(event.target.value)} />
+              </section>
+            )}
+          </div>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <EditorFrame page={page} open={open} wide title={confirming ? "Remove this service?" : initial ? "Edit service" : "New service"} kicker="Catalog" onClose={onClose}>
@@ -295,6 +400,103 @@ export function PackageEditor({ open, initial, onClose, page }: { open: boolean;
     setIncludeText(initial ? includesToText(initial.includes) : "");
   }, [open, initial]);
   const set = (patch: Partial<Package>) => setDraft({ ...draft, ...patch });
+  const commit = () => {
+    const next = { ...draft, name: draft.name.trim(), guarantees: linesOf(guarantees), extras: linesOf(extras), outlets: parseOutlets(outletText), includes: parseIncludes(includeText) };
+    if (initial) store.updatePackage(initial.id, next);
+    else store.addPackage({ ...next, id: uid("pkg") });
+    onClose();
+  };
+  if (page && confirming) {
+    return (
+      <div className="page screen">
+        <header className="card desk-head">
+          <div className="kicker">Package</div>
+          <h1 className="display">Remove this package?</h1>
+          <div className="desk-head-actions">
+            <button type="button" className="btn" onClick={() => setConfirming(false)}>Back</button>
+            <button type="button" className="btn btn-danger" onClick={() => { if (initial) store.deletePackage(initial.id); onClose(); }}>Remove</button>
+          </div>
+        </header>
+      </div>
+    );
+  }
+  if (page) {
+    const logo = packageMark(draft, store.platforms);
+    const mark = draft.group === "bundle" ? "Pk" : String(draft.rank || 0).padStart(2, "0");
+    const sheet = draft.id.startsWith("supply-") || draft.id.startsWith("vol-");
+    const fresh = !draft.id;
+    const showOutlets = !sheet && (fresh || Boolean(outletText.trim()) || draft.group === "pr");
+    const showIncludes = !sheet && (fresh || Boolean(includeText.trim()));
+    const showLines = !sheet && (fresh || Boolean(guarantees.trim()) || Boolean(extras.trim()));
+    const packSlots = 1 + Number(showOutlets) + Number(showIncludes) + Number(showLines);
+    return (
+      <form className="page screen" onSubmit={(event) => { event.preventDefault(); if (draft.name.trim()) commit(); }}>
+        <header className="card desk-head has-mark">
+          <span className="mark token-logo lg">{logo ? <img src={logo} alt="" /> : mark}</span>
+          <div className="kicker">{draft.group === "pr" ? "Press ladder" : draft.group === "budget" ? "Budget" : "Bundle"}</div>
+          <input className="display name-field" value={draft.name} placeholder="Name" required autoFocus onChange={(event) => set({ name: event.target.value })} />
+          <input className="lede summary-field" value={draft.summary} placeholder="Summary" onChange={(event) => set({ summary: event.target.value })} />
+          <div className="desk-head-actions">
+            {initial && <button type="button" className="btn btn-danger" onClick={() => setConfirming(true)}>Delete</button>}
+            <button className="btn btn-primary" type="submit" disabled={!draft.name.trim()}>Save</button>
+          </div>
+        </header>
+        <div className="desk-fit">
+          <div className={`offer-board ${["one", "two", "three", "four"][packSlots - 1]}`}>
+            <section className="card">
+              <h2>Details</h2>
+              <div className="detail-grid">
+                <div>
+                  <span className="tiny">Group</span>
+                  <Select value={draft.group} onChange={(value) => set({ group: value as Package["group"], phase: value === "bundle" ? "bundle" : value === "budget" ? draft.phase : "phase-3" })} options={[{ value: "pr", label: "Ladder" }, { value: "bundle", label: "Bundle" }, { value: "budget", label: "Budget" }]} label="Group" />
+                </div>
+                <div>
+                  <span className="tiny">Rank</span>
+                  <input className="cell-input" value={draft.rank} onChange={(event) => set({ rank: Number(event.target.value) || 0 })} />
+                </div>
+                <div>
+                  <span className="tiny">Price</span>
+                  <input className="cell-input" value={draft.price} onChange={(event) => set({ price: Number(event.target.value) || 0 })} />
+                </div>
+                <div>
+                  <span className="tiny">Seller</span>
+                  <Select value={draft.providerId} onChange={(value) => set({ providerId: value })} options={store.providers.map((item) => ({ value: item.id, label: item.name }))} label="Seller" />
+                </div>
+              </div>
+            </section>
+            {showOutlets && (
+              <section className="card note-pad">
+                <h2>{draft.outlets.some((item) => item.note) ? "Callers" : "Outlets"}</h2>
+                <textarea className="note-field" value={outletText} placeholder="Name | url" onChange={(event) => setOutletText(event.target.value)} />
+              </section>
+            )}
+            {showIncludes && (
+              <section className="card note-pad">
+                <h2>Deliverables</h2>
+                <textarea className="note-field" value={includeText} placeholder="Label | url | note" onChange={(event) => setIncludeText(event.target.value)} />
+              </section>
+            )}
+            {showLines && (
+              <section className="card note-pad">
+                {(fresh || guarantees.trim()) && (
+                  <>
+                    <h2>Guarantee</h2>
+                    <textarea className="note-field" value={guarantees} placeholder="One guarantee per line" onChange={(event) => setGuarantees(event.target.value)} />
+                  </>
+                )}
+                {(fresh || extras.trim()) && (
+                  <>
+                    <h2>{draft.outlets.length ? "Also" : "Terms"}</h2>
+                    <textarea className="note-field" value={extras} placeholder="One per line" onChange={(event) => setExtras(event.target.value)} />
+                  </>
+                )}
+              </section>
+            )}
+          </div>
+        </div>
+      </form>
+    );
+  }
   return (
     <EditorFrame page={page} open={open} wide title={confirming ? "Remove this package?" : initial ? "Edit package" : "New package"} kicker="Package" onClose={onClose}>
       {confirming ? (
@@ -383,9 +585,9 @@ export function LineEditor({ open, project, line, onClose }: { open: boolean; pr
   );
 }
 
-export function WalletEditor({ open, project, wallet, onClose }: { open: boolean; project: Project; wallet: Wallet | null; onClose: () => void }) {
+export function WalletEditor({ open, project, wallet, group = "hot", onClose }: { open: boolean; project: Project; wallet: Wallet | null; group?: "hot" | "supply"; onClose: () => void }) {
   const store = useStore();
-  const blank: Wallet = { id: "", label: "", address: "", chain: project.chain, purpose: "Execution", privateKey: "" };
+  const blank: Wallet = { id: "", label: "", address: "", chain: project.chain, purpose: "Execution", privateKey: "", group };
   const [draft, setDraft] = useDraft(open, wallet || blank);
   const [reveal, setReveal] = useState(false);
   useEffect(() => { if (open) setReveal(false); }, [open, wallet?.id]);
@@ -408,6 +610,9 @@ export function WalletEditor({ open, project, wallet, onClose }: { open: boolean
         <button type="button" className="btn btn-small" onClick={() => setReveal((value) => !value)}>{reveal ? "Hide key" : "Show key"}</button>
         <Field label="Chain">
           <Select value={draft.chain} onChange={(value) => set({ chain: value })} options={CHAINS.map((chain) => ({ value: chain, label: chain }))} />
+        </Field>
+        <Field label="Group">
+          <Select value={draft.group === "supply" ? "supply" : "hot"} onChange={(value) => set({ group: value === "supply" ? "supply" : "hot" })} options={[{ value: "hot", label: "Hot wallets" }, { value: "supply", label: "Supply wallets" }]} />
         </Field>
         <Field label="Purpose">
           <Select value={draft.purpose} onChange={(value) => set({ purpose: value })} options={WALLET_PURPOSES.map((item) => ({ value: item, label: item }))} />
@@ -493,10 +698,52 @@ export function BriefEditor({ open, embedded, project, onClose }: { open?: boole
           <Field label="Target date"><input className="input" type="date" value={draft.targetDate} onChange={(e) => set({ targetDate: e.target.value })} /></Field>
           <Field label="Notes" className="span-2"><textarea className="textarea" value={draft.notes} onChange={(e) => set({ notes: e.target.value })} /></Field>
         </div>
-        <button className="btn btn-primary" type="submit">Save token</button>
+        <div className="cluster">
+          <button className="btn btn-primary" type="submit">Save token</button>
+        </div>
       </form>
   );
-  if (embedded) return <section className="card record-form">{form}</section>;
+  if (embedded) {
+    return (
+      <section className="card identity-card">
+        <h2>Identity</h2>
+        <form className="identity-fit" onSubmit={(event) => {
+          event.preventDefault();
+          store.updateProject(project.id, {
+            name: draft.name.trim(),
+            ticker: draft.ticker.trim().replace(/^\$/, ""),
+            chain: draft.chain,
+            launchpadId: draft.launchpadId,
+            contract: draft.contract.trim(),
+            supply: draft.supply.trim(),
+            client: draft.client.trim(),
+            status: draft.status,
+            budgetUsd: Number(draft.budgetUsd) || 0,
+            targetDate: draft.targetDate,
+            notes: draft.notes,
+          });
+          onClose();
+        }}>
+          <div className="identity-grid fields">
+            <Field label="Token"><input className="input" value={draft.name} onChange={(e) => set({ name: e.target.value })} required /></Field>
+            <Field label="Ticker"><input className="input" value={draft.ticker} onChange={(e) => set({ ticker: e.target.value })} /></Field>
+            <Field label="Owner"><input className="input" value={draft.client} onChange={(e) => set({ client: e.target.value })} /></Field>
+            <Field label="Chain"><Select value={draft.chain} onChange={(value) => set({ chain: value })} options={CHAINS.map((chain) => ({ value: chain, label: chain }))} /></Field>
+            <Field label="Launchpad"><Select value={draft.launchpadId} onChange={(value) => set({ launchpadId: value })} options={launchpads.map((item) => ({ value: item.id, label: item.name }))} /></Field>
+            <Field label="Target"><input className="input" type="date" value={draft.targetDate} onChange={(e) => set({ targetDate: e.target.value })} /></Field>
+            <Field label="Budget"><input className="input" value={draft.budgetUsd} onChange={(e) => set({ budgetUsd: Number(e.target.value) || 0 })} /></Field>
+            <Field label="Supply" className="span-rest"><input className="input" value={draft.supply} onChange={(e) => set({ supply: e.target.value })} /></Field>
+            <Field label="Contract" className="span-2"><input className="input" value={draft.contract} onChange={(e) => set({ contract: e.target.value })} /></Field>
+          </div>
+          <Field label="Notes" className="identity-note-field"><textarea className="textarea" value={draft.notes} onChange={(e) => set({ notes: e.target.value })} /></Field>
+          <div className="cluster">
+            <button className="btn btn-primary" type="submit">Save token</button>
+            <button type="button" className="btn" onClick={onClose}>Back</button>
+          </div>
+        </form>
+      </section>
+    );
+  }
   return (
     <Modal open={Boolean(open)} title="Edit token" kicker={project.ticker || "Project"} onClose={onClose}>
       {form}

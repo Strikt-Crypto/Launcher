@@ -30,7 +30,7 @@ export function Contacts() {
   }, [contacts, query, tab, company, store.projects]);
 
   return (
-    <div className="page">
+    <div className="page screen">
       <PageHead
         kicker="People"
         title="Contacts"
@@ -53,6 +53,7 @@ export function Contacts() {
           <ViewSwitch value={view} onChange={setView} />
         </div>
       </div>
+      <div className="desk-fit">
       {contacts.length === 0 && (
         <Empty title="No contacts yet" text="Add a person with a photo, number, title, and their social links." action={<Link href="/contacts/new" className="btn btn-primary"><Plus size={16} weight="bold" />Add contact</Link>} />
       )}
@@ -100,6 +101,7 @@ export function Contacts() {
         ))}
       </div>
       )}
+      </div>
     </div>
   );
 }

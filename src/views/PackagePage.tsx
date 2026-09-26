@@ -3,13 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { PencilSimple, Plus, Trash } from "@phosphor-icons/react";
+import { Check, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
 import { Confirm, Empty } from "../components/ui";
-import { byId, href, money } from "../lib/format";
-import type { LinkItem, Outlet, Platform } from "../types";
+import { byId, href, money, whatsappHref } from "../lib/format";
+import { initials } from "../lib/logo";
 import { outletMark, packageMark } from "../lib/marks";
+import { socialLogo } from "../lib/brands";
 import { useStore } from "../store";
 import { useUi } from "../ui";
+import type { Contact, Outlet } from "../types";
 
 export function PackagePage() {
   const { id } = useParams();
@@ -18,176 +20,172 @@ export function PackagePage() {
   const router = useRouter();
   const pack = store.packages.find((item) => item.id === id);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pickedId, setPickedId] = useState("");
+  const [picked, setPicked] = useState<string[]>([]);
+  if (pack && pickedId !== pack.id) {
+    setPickedId(pack.id);
+    setPicked([]);
+  }
   if (!pack) return <div className="page"><Empty title="Package missing" text="It was removed." action={<Link href="/packages" className="btn">Packages</Link>} /></div>;
   const provider = byId(store.providers, pack.providerId);
-  const family = pack.id.startsWith("supply-") ? "supply-" : pack.id.startsWith("vol-") ? "vol-" : "";
-  const others = store.packages.filter((item) => item.id !== pack.id && (family ? item.id.startsWith(family) : item.group === pack.group && item.providerId === pack.providerId)).sort((a, b) => a.rank - b.rank);
-  const callers = pack.outlets.some((item) => item.note);
   const logo = packageMark(pack, store.platforms);
-  const mark = pack.group === "bundle" ? "Pk" : String(pack.rank).padStart(2, "0");
+  const people = store.contacts.filter((item) => item.providerId === pack.providerId);
+  const contact = people[0];
+  const callers = pack.outlets.some((item) => item.group);
+  const deck = pack.includes.find((item) => item.url);
+  const scope = pack.includes.filter((item) => !item.url);
+  const kind = pack.group === "pr" ? "Article PR" : pack.id === "artem-tier-1" ? "Tier 1" : pack.group === "bundle" ? "Bundle" : "Budget";
+  const chosen = pack.outlets.filter((item) => picked.includes(item.name));
+  const callerSum = chosen.reduce((sum, item) => sum + (item.price || 0), 0);
+  function toggleCaller(name: string) {
+    setPicked((current) => (current.includes(name) ? current.filter((item) => item !== name) : [...current, name]));
+  }
 
   return (
-    <div className="page">
+    <div className="page screen">
       <header className="card desk-head has-mark">
-        <span className="mark token-logo lg">{logo ? <img src={logo} alt="" /> : mark}</span>
-        <div className="kicker">{pack.group === "pr" ? `Step ${mark} · Press ladder` : pack.group === "budget" ? "Startup · Budget" : callers ? "Narrative & GTM" : "Bundle"}</div>
-        <h1 className="display">{pack.name}</h1>
-        <p className="lede">{pack.summary}</p>
+        <span className="mark token-logo lg">{logo ? <img src={logo} alt="" /> : initials(pack.group === "pr" ? "Article PR" : pack.name)}</span>
+        <div className="desk-copy">
+          <div className="kicker">{kind}{provider ? <> · <Link href={`/providers/${provider.id}`}>{provider.name}</Link></> : ""}</div>
+          <h1 className="display">{pack.name}</h1>
+        </div>
         <div className="desk-figure">
-          <div className="tiny">Price</div>
-          <div className="figure">{money(pack.price, pack.currency)}</div>
+          <div className="tiny">{callerSum ? "Package + callers" : "Price"}</div>
+          <div className="figure">{money(pack.price + callerSum, pack.currency)}</div>
+          {callerSum ? <div className="tiny">{money(pack.price, pack.currency)} + {money(callerSum, pack.currency)}</div> : null}
         </div>
         <div className="desk-head-actions">
           <button type="button" className="btn btn-danger" onClick={() => setConfirmDelete(true)}><Trash size={16} />Delete</button>
           <Link className="btn" href={`/packages/${pack.id}/edit`}><PencilSimple size={16} />Edit</Link>
-          <button type="button" className="btn btn-primary" onClick={() => ui.openAdd({ packageId: pack.id })}><Plus size={16} weight="bold" />Add to project</button>
+          <button type="button" className="btn btn-primary" onClick={() => ui.openAdd({ packageId: pack.id, callers: picked })}><Plus size={16} weight="bold" />Add to project</button>
         </div>
       </header>
-
-      <div className="pack-facts">
-        <article>
-          <span>Seller</span>
-          {provider ? <Link href={`/providers/${provider.id}`}><strong>{provider.name}</strong></Link> : <strong>Unassigned</strong>}
-        </article>
-        <article><span>Price</span><strong>{money(pack.price, pack.currency)}</strong></article>
-        <article><span>{callers ? "Callers" : "Outlets"}</span><strong>{pack.outlets.length}</strong></article>
-        <article><span>Deliverables</span><strong>{pack.includes.length}</strong></article>
-        <article><span>Guarantees</span><strong>{pack.guarantees.length}</strong></article>
+      <div className="desk-fit">
+        <div className="offer-board four">
+          <section className="card">
+            <div className="card-label">
+              <h2>Price</h2>
+              {deck?.url ? <a href={href(deck.url)} target="_blank" rel="noreferrer">Deck</a> : null}
+            </div>
+            <div className="price-grid">
+              <div className="stat"><span className="stat-top"><span className="tiny">Amount</span></span><b>{money(pack.price, pack.currency)}</b></div>
+              {callers ? scope.map((item) => (
+                <div key={item.label} className="stat"><span className="stat-top"><span className="tiny">{item.label}</span></span><b>{item.note || "—"}</b></div>
+              )) : (
+                <>
+                  <div className="stat"><span className="stat-top"><span className="tiny">Kind</span></span><b>{kind}</b></div>
+                  <div className="stat"><span className="stat-top"><span className="tiny">Reach</span></span><b>{pack.guarantees[0] || "—"}</b></div>
+                  <div className="stat"><span className="stat-top"><span className="tiny">Included</span></span><b>{pack.guarantees[1] || pack.extras[0] || "—"}</b></div>
+                </>
+              )}
+            </div>
+          </section>
+          <section className="card">
+            <h2>{callers ? "Callers" : "Sites"}</h2>
+            <div className="stat geo-lead">
+              <span className="stat-top"><span className="tiny">{callers ? (picked.length ? "Selected" : "Roster") : "Named"}</span>{callers ? <span className="tiny">{picked.length ? `${picked.length} of ${pack.outlets.length}` : "Select one or more"}</span> : null}</span>
+              <b>{callers && picked.length ? money(callerSum, pack.currency) : pack.outlets.length}</b>
+            </div>
+            <div className="line-fill">
+              {callers ? <CallerList outlets={pack.outlets} picked={picked} onToggle={toggleCaller} /> : (
+                <>
+                  {pack.extras.map((text) => (
+                    <div key={text} className="list-row site"><span className="token-logo sm">{initials(text)}</span><span>{text}</span></div>
+                  ))}
+                  {pack.outlets.map((item) => {
+                    const icon = outletMark(item.name, item.url, store.platforms);
+                    const url = href(item.url || "");
+                    const inner = (<><span className="token-logo sm">{icon ? <img src={icon} alt="" /> : initials(item.name)}</span><span>{item.name}</span></>);
+                    return url ? <a key={item.name} className="list-row site" href={url} target="_blank" rel="noreferrer">{inner}</a> : <div key={item.name} className="list-row site">{inner}</div>;
+                  })}
+                </>
+              )}
+            </div>
+          </section>
+          <section className="card">
+            <h2>Details</h2>
+            {contact ? <PackageContact contact={contact} /> : null}
+          </section>
+          <section className="card note-pad">
+            <h2>Note</h2>
+            <textarea className="note-field" value={pack.notes || ""} placeholder="Write a note" onChange={(event) => store.updatePackage(pack.id, { notes: event.target.value })} />
+          </section>
+        </div>
       </div>
-
-      <div className="pack-board">
-        {pack.guarantees.length > 0 && (
-          <section className="card hold">
-            <h2>Guarantee</h2>
-            <div className="card-scroll"><div className="row-list">{pack.guarantees.map((item) => <div key={item}><span>{item}</span></div>)}</div></div>
-          </section>
-        )}
-        {pack.extras.length > 0 && (
-          <section className="card hold">
-            <h2>Terms</h2>
-            <div className="card-scroll"><div className="row-list">{pack.extras.map((item) => <div key={item}><span>{item}</span></div>)}</div></div>
-          </section>
-        )}
-        {pack.includes.length > 0 && (
-          <section className="card hold">
-            <h2>Deliverables</h2>
-            <div className="card-scroll"><div className="outlet-grid">
-              {pack.includes.map((item) => {
-                const icon = outletMark(item.label, item.url, store.platforms);
-                const body = <span className="brand-bit">{icon && <img className="mark-logo" src={icon} alt="" />}<strong>{item.label}</strong>{item.note ? <span className="tiny">{item.note}</span> : null}</span>;
-                return item.url
-                  ? <a key={item.label} href={href(item.url)} target="_blank" rel="noreferrer">{body}</a>
-                  : <span key={item.label} className="outlet">{body}</span>;
-              })}
-            </div></div>
-          </section>
-        )}
-      </div>
-
-      {pack.outlets.length > 0 && !callers && (
-        <section className="section">
-          <div className="spread"><h2>Outlets</h2><span className="tiny">{pack.outlets.length}</span></div>
-          <div className="outlet-grid">
-            {pack.outlets.map((item) => {
-              const icon = outletMark(item.name, item.url, store.platforms);
-              const body = <span className="brand-bit">{icon && <img className="mark-logo" src={icon} alt="" />}{item.name}</span>;
-              return item.url
-                ? <a key={item.name} href={href(item.url)} target="_blank" rel="noreferrer">{body}</a>
-                : <span key={item.name} className="outlet">{body}</span>;
-            })}
-          </div>
-        </section>
-      )}
-      {callers && <Callers outlets={pack.outlets} platforms={store.platforms} />}
-
-      {others.length > 0 && (
-        <section className="section">
-          <div className="project-grid">
-            {others.map((item) => (
-              <Link key={item.id} href={`/packages/${item.id}`} className="project-card">
-                <div className="card-top">
-                  <span className="token-logo">{packageMark(item, store.platforms) ? <img src={packageMark(item, store.platforms)} alt="" /> : item.group === "bundle" ? "Pk" : String(item.rank).padStart(2, "0")}</span>
-                  <div className="card-id">
-                    <strong>{item.name}</strong>
-                    <div className="tiny">{item.summary}</div>
-                  </div>
-                </div>
-                <div className="card-stat">
-                  <div>
-                    <div className="tiny">Price</div>
-                    <div className="figure">{money(item.price, item.currency)}</div>
-                  </div>
-                </div>
-                <div className="lane-grid">
-                  <div><span>Outlets</span><span className="num">{item.outlets.length}</span></div>
-                  <div><span>Includes</span><span className="num">{item.includes.length}</span></div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
       <Confirm open={confirmDelete} title={`Delete ${pack.name}?`} text="Projects that already copied this package keep their rows." confirm="Delete" onConfirm={() => { store.deletePackage(pack.id); router.push("/packages"); }} onClose={() => setConfirmDelete(false)} />
     </div>
   );
 }
 
-function profileLabel(url: string) {
-  try {
-    const host = new URL(url).host.replace(/^www\./, "");
-    if (host === "fomo.family") return "FOMO";
-    if (host === "pump.fun") return "Pump.fun";
-    if (host === "x.com" || host === "twitter.com") return "X";
-    return host;
-  } catch {
-    return "Profile";
-  }
-}
-
-function profileLinks(item: Outlet): LinkItem[] {
-  if (item.links?.length) return item.links;
-  return item.url ? [{ label: profileLabel(item.url), url: item.url }] : [];
-}
-
-function Callers({ outlets, platforms }: { outlets: Outlet[]; platforms: Platform[] }) {
-  const groups = [...new Set(outlets.map((item) => item.group || "Callers"))];
+function CallerList({ outlets, picked, onToggle }: { outlets: Outlet[]; picked: string[]; onToggle: (name: string) => void }) {
+  const groups = [...new Set(outlets.map((item) => item.group).filter(Boolean))] as string[];
   return (
     <>
       {groups.map((group) => (
-        <section key={group} className="section">
-          <div className="caller-grid">
-            {outlets.filter((item) => (item.group || "Callers") === group).map((item) => {
-              const icon = outletMark(item.name, item.url, platforms);
-              const links = profileLinks(item);
-              return (
-                <article key={item.name} className="social-card">
-                  <div className="spread">
-                    <span className="token-logo">{icon ? <img src={icon} alt="" /> : item.name.slice(0, 2)}</span>
-                  </div>
-                  <div className="card-id">
-                    <strong>{item.name}</strong>
-                    {item.note ? <div className="tiny">{item.note}</div> : null}
-                  </div>
-                  {links.length > 0 && (
-                    <div className="chain-row">
-                      {links.map((link) => {
-                        const mark = outletMark(link.label, link.url, platforms);
-                        return (
-                          <a key={link.url} className="brand-bit" href={href(link.url)} target="_blank" rel="noreferrer">
-                            {mark && <img className="mark-logo" src={mark} alt="" />}
-                            {link.label}
-                          </a>
-                        );
-                      })}
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        </section>
+        <div key={group} className="caller-group">
+          <div className="line-band"><b>{group}</b>{group === "Mainly fomo buyers" ? <span className="tiny">Posts can be discussed</span> : <span className="tiny">A range books the top price</span>}</div>
+          {outlets.filter((item) => item.group === group).map((item) => {
+            const on = picked.includes(item.name);
+            const primary = item.url || "";
+            const extra = (item.links || []).filter((link) => link.url !== primary);
+            return (
+              <div key={item.name} className={on ? "list-row caller on" : "list-row caller"} onClick={() => onToggle(item.name)}>
+                <span className="token-logo sm">{initials(item.name.replace(/^@/, ""))}</span>
+                {primary ? <a href={href(primary)} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{item.name}</a> : <span>{item.name}</span>}
+                <span>{item.note || "FOMO buy"}{extra.map((link) => <a key={link.url} href={href(link.url)} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{link.label}</a>)}</span>
+                <b className="num">{money(item.price || 0, "USD")}</b>
+                {on ? <Check size={16} weight="bold" /> : <span />}
+              </div>
+            );
+          })}
+        </div>
       ))}
     </>
+  );
+}
+
+function PackageContact({ contact }: { contact: Contact }) {
+  const [photoOff, setPhotoOff] = useState(false);
+  const reach = [
+    contact.phone ? { label: "Number", value: contact.phone, href: whatsappHref(contact.phone) } : null,
+    contact.email ? { label: "Email", value: contact.email, href: href(contact.email) } : null,
+  ].filter((item): item is { label: string; value: string; href: string } => Boolean(item));
+  const role = [contact.title, contact.company].filter(Boolean).join(" · ");
+  return (
+    <div className="who-board">
+      <Link href={`/contacts/${contact.id}`} className="who-lead">
+        <span className="token-logo">{contact.image && !photoOff ? <img src={contact.image} alt="" onError={() => setPhotoOff(true)} /> : initials(contact.name)}</span>
+        <span className="line-copy">
+          <b>{contact.name}</b>
+          {role ? <span className="tiny">{role}</span> : null}
+        </span>
+      </Link>
+      {reach.length > 0 && (
+        <div className="req-pair">
+          <span className="tiny">Reach</span>
+          {reach.map((item) => (
+            <a key={item.label} className="stat nest" href={item.href} target="_blank" rel="noreferrer">
+              <span className="stat-top"><span className="tiny">{item.label}</span></span>
+              <b>{item.value}</b>
+            </a>
+          ))}
+        </div>
+      )}
+      {contact.links.length > 0 && (
+        <div className="req-pair">
+          <span className="tiny">Socials</span>
+          {contact.links.map((link) => {
+            const logo = socialLogo(link.name);
+            return (
+              <a key={link.id} className="social-row" href={href(link.url)} target="_blank" rel="noreferrer">
+                <span className="token-logo sm">{logo ? <img src={logo} alt="" /> : initials(link.name)}</span>
+                <span>{link.name}</span>
+                <b>{link.handle || link.url}</b>
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,7 +1,14 @@
 import { ROUTE_LABEL } from "../lib/labels";
-import { formatEth, formatUsd } from "../lib/format";
 import { SUPPLY_ROWS } from "../lib/treasury";
 import type { SupplyPct, SupplyRoute } from "../types";
+
+function eth(amount: number) {
+  return `${amount.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} ETH`;
+}
+
+function usd(amount: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+}
 
 export function SupplyPicker({
   pct,
@@ -26,8 +33,8 @@ export function SupplyPicker({
             const on = pct === row.pct && route === key;
             return (
               <button key={key} type="button" className={on ? "on" : ""} onClick={() => onChange(row.pct, key)}>
-                <strong>{formatEth(row[key])}</strong>
-                <div className="tiny">{formatUsd(row[key] * ethUsd)}</div>
+                <strong>{eth(row[key])}</strong>
+                <div className="tiny">{usd(row[key] * ethUsd)}</div>
                 <div className="tiny">{ROUTE_LABEL[key]}</div>
               </button>
             );

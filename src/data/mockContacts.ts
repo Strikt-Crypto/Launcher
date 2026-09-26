@@ -54,11 +54,11 @@ export const mockContacts: Contact[] = [
   {
     id: "con-mock-4",
     name: "Sofia Nguyen",
-    title: "Trending buyer",
+    title: "Trending",
     phone: "+1 646 555 0194",
     email: "sofia.nguyen@fomo.test",
     company: "FOMO",
-    note: "Places FOMO and GMGN trending windows.",
+    note: "FOMO trending, ranks 1 through 10.",
     image: "/contacts/04.jpg",
     providerId: "fomo-desk",
     links: [

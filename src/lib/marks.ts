@@ -33,7 +33,7 @@ const PACKAGE_MARKS: Record<string, string> = {
   "pr-diamond-elite": "/brands/packages/diamond-elite.svg?v=2",
   "pr-royal": "/brands/packages/royal.svg?v=2",
   "pr-god": "/brands/packages/god.svg?v=2",
-  "artem-tier-1": "/brands/packages/artem-tier-1.svg?v=2",
+  "artem-tier-1": "/brands/packages/artem-tier-1.svg?v=3",
 };
 
 const HOST_LOGOS: Record<string, string> = {
@@ -118,5 +118,6 @@ export function outletMark(name: string, url: string | undefined, platforms: Pla
 export function packageMark(pack: Package, _platforms: Platform[]) {
   if (pack.id.startsWith("supply-")) return "/brands/packages/supply.svg?v=2";
   if (pack.id.startsWith("vol-")) return "/brands/packages/volume.svg?v=2";
+  if (pack.id.startsWith("article-pr-")) return `/brands/packages/${pack.id}.svg?v=2`;
   return PACKAGE_MARKS[pack.id] || "";
 }

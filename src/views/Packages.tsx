@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Plus } from "@phosphor-icons/react";
-import { PageHead, Pill, Select, Tabs, ViewSwitch } from "../components/ui";
+import { Empty, Pill, Select, Tabs, ViewSwitch } from "../components/ui";
 import { money } from "../lib/format";
+import { initials } from "../lib/logo";
 import { packageMark } from "../lib/marks";
 import { useStore } from "../store";
 import { useUi } from "../ui";
@@ -34,8 +35,7 @@ export function Packages() {
   }
 
   return (
-    <div className="page">
-      <PageHead kicker="Offers" title="Packages" lede="The Robinhood pack, the press ladder, and Artem’s Tier 1 sheet. Select up to three ladder steps to compare." actions={<Link className="btn btn-primary" href="/packages/new"><Plus size={16} weight="bold" />New package</Link>} />
+    <div className="page screen">
       <div className="tool-bar">
         <Tabs
           value={group}
@@ -43,7 +43,7 @@ export function Packages() {
           tabs={[
             { id: "all", label: "All", count: store.packages.length },
             { id: "budget", label: "Budget", count: store.packages.filter((item) => item.group === "budget").length },
-            { id: "pr", label: "Ladder", count: store.packages.filter((item) => item.group === "pr").length },
+            { id: "pr", label: "Article PR", count: store.packages.filter((item) => item.group === "pr").length },
             { id: "bundle", label: "Bundles", count: store.packages.filter((item) => item.group === "bundle").length },
           ]}
         />
@@ -51,8 +51,11 @@ export function Packages() {
           <Select value={desk} onChange={setDesk} options={[{ value: "all", label: "All sellers" }, ...desks.map((provider) => ({ value: provider.id, label: provider.name }))]} />
           <input className="input" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
           <ViewSwitch value={view} onChange={setView} />
+          <Link className="btn btn-primary" href="/packages/new"><Plus size={16} weight="bold" />New package</Link>
         </div>
       </div>
+      <div className="desk-fit">
+      {cards.length === 0 && <Empty title="No packages yet" text="New package starts one." />}
       {cards.length > 0 && (
           <section className="section">
             {view === "table" ? (
@@ -63,7 +66,7 @@ export function Packages() {
                     {cards.map((pack) => (
                       <tr key={pack.id}>
                         <td><Link className="name-link" href={`/packages/${pack.id}`}><strong>{pack.name}</strong></Link></td>
-                        <td>{pack.id === "artem-tier-1" ? "Tier 1" : pack.group === "budget" ? "Budget" : pack.group === "bundle" ? "Bundle" : "Ladder"}</td>
+                        <td>{pack.group === "pr" ? "Article PR" : pack.id.startsWith("mods-") ? "Mods" : pack.id === "artem-tier-1" ? "Tier 1" : pack.group === "budget" ? "Budget" : "Bundle"}</td>
                         <td className="price">{money(pack.price, pack.currency)}</td>
                         <td>{pack.outlets.length}</td>
                       </tr>
@@ -81,12 +84,12 @@ export function Packages() {
             <article key={pack.id} className="project-card">
               <Link href={`/packages/${pack.id}`} className="card-hit" aria-label={pack.name} />
               <div className="card-top">
-                <span className="token-logo">{logo ? <img src={logo} alt="" /> : mark}</span>
+                <span className="token-logo">{logo ? <img src={logo} alt="" /> : pack.group === "pr" ? initials("Article PR") : mark}</span>
                 <div className="card-id">
                   <strong>{pack.name}</strong>
-                  <div className="tiny">{pack.id === "artem-tier-1" ? "Narrative & GTM" : pack.group === "budget" ? pack.extras[0] || "Startup" : pack.group === "bundle" ? "Bundle" : `Step ${String(pack.rank).padStart(2, "0")}`}</div>
+                  <div className="tiny">{pack.group === "pr" ? "Article PR" : pack.id.startsWith("mods-") ? "Mods" : pack.id === "artem-tier-1" ? "Narrative & GTM" : pack.group === "budget" ? pack.extras[0] || "Startup" : "Bundle"}</div>
                 </div>
-                <Pill>{pack.id === "artem-tier-1" ? "Tier 1" : pack.group === "budget" ? "Budget" : pack.group === "bundle" ? "Bundle" : "Ladder"}</Pill>
+                <Pill>{pack.group === "pr" ? "Article PR" : pack.id.startsWith("mods-") ? "Mods" : pack.id === "artem-tier-1" ? "Tier 1" : pack.group === "budget" ? "Budget" : "Bundle"}</Pill>
               </div>
               <div className="card-stat">
                 <div>
@@ -104,7 +107,7 @@ export function Packages() {
                 </span>
               </div>
               <div className="lane-grid">
-                <div><span>Outlets</span><span className="num">{pack.outlets.length}</span></div>
+                <div><span>{pack.outlets.some((item) => item.group) ? "Callers" : "Outlets"}</span><span className="num">{pack.outlets.length}</span></div>
                 <div><span>Includes</span><span className="num">{pack.includes.length}</span></div>
                 <div><span>Guarantees</span><span className="num">{pack.guarantees.length}</span></div>
                 <div><span>Extras</span><span className="num">{pack.extras.length}</span></div>
@@ -129,6 +132,7 @@ export function Packages() {
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }

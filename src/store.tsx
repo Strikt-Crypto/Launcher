@@ -73,29 +73,31 @@ function paintRoster(state: AppState): AppState {
           ...contact,
           providerId: contact.providerId || next.providerId,
           company: /desk/i.test(contact.company) ? next.company : contact.company,
-          title: /desk/i.test(contact.title) ? next.title : contact.title,
-          note: contact.note.replace(/ for the desk/i, ""),
+          title: contact.title === "Trending buyer" || /desk/i.test(contact.title) ? next.title : contact.title,
+          note: contact.note === "Places FOMO and GMGN trending windows." ? next.note : contact.note.replace(/ for the desk/i, ""),
         };
       }),
       ...mockContacts.filter((contact) => !(state.contacts || []).some((item) => item.id === contact.id)),
-    ],
-    packages: [
-      ...state.packages.map((pack) => {
-        if (!pack.id.startsWith("vol-")) return pack;
-        const next = seeded.packages.find((item) => item.id === pack.id);
-        return next ? { ...pack, price: next.price, summary: next.summary, includes: next.includes, extras: next.extras, guarantees: next.guarantees } : pack;
+    ].filter((contact) => contact.id !== "con-mod-02" && contact.id !== "con-mod-001"),
+    packages: seeded.packages.map((pack) => {
+      const prev = state.packages.find((item) => item.id === pack.id);
+      return prev?.notes ? { ...pack, notes: prev.notes } : pack;
+    }),
+    services: seeded.services.map((service) => {
+      const prev = state.services.find((item) => item.id === service.id);
+      if (!prev || !("notes" in prev)) return service;
+      if (service.id === "mod-teams" && prev.notes && !prev.notes.includes("@MyMod02")) {
+        return { ...service, notes: `${prev.notes.trim()}\n\nTeam leads\n@MyMod02\n@MyMod001` };
+      }
+      return { ...service, notes: prev.notes };
+    }),
+    providers: [
+      ...state.providers.map((provider) => {
+        const next = freshProviders.get(provider.id);
+        return next ? { ...provider, name: next.name, role: next.role, about: next.about, logo: next.logo || "" } : provider;
       }),
-      ...seeded.packages.filter((pack) => !state.packages.some((item) => item.id === pack.id)),
+      ...seeded.providers.filter((provider) => !state.providers.some((item) => item.id === provider.id)),
     ],
-    services: state.services.map((service) => {
-      const next = seeded.services.find((item) => item.id === service.id);
-      const patched = service.id === "volume-500k" && next ? { ...service, available: next.available, summary: next.summary, details: next.details } : service;
-      return { ...patched, summary: patched.summary.replace("market-making desk", "market maker"), details: patched.details.replace("the desk fills", "you fill") };
-    }),
-    providers: state.providers.map((provider) => {
-      const next = freshProviders.get(provider.id);
-      return next ? { ...provider, name: next.name, role: next.role, about: next.about, logo: next.logo || "" } : provider;
-    }),
     platforms: state.platforms.map((platform) => {
       const next = freshPlatforms.get(platform.id);
       return next ? { ...platform, logo: next.logo || "", chains: next.chains, ...(next.url ? { url: next.url } : {}) } : platform;
@@ -111,7 +113,7 @@ function paintRoster(state: AppState): AppState {
           ? mockWallets(project.id)
           : (project.wallets || []).map((wallet) => ({ ...wallet, chain: "Robinhood" })),
         checks: project.checks.map((check) => check.text === "Quote approved" ? { ...check, text: "Plan approved" } : check),
-        notes: project.notes.replace("the desk discount", "the discount"),
+        notes: project.notes.replace("the desk discount", "the discount").replace("Frog meme. This card stays the Phase 1 working sheet, with the discount on the seeded rows.", ""),
         client: project.client === "Desk" ? "House" : project.client,
         discountNote: project.discountNote === "Desk discount" ? "Discount" : project.discountNote,
         ...(next ? { contract: project.contract || next.contract, supply: project.supply || next.supply } : {}),

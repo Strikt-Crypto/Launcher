@@ -83,7 +83,7 @@ const CHAIN_FACTS: Record<number, { contract: string; supply: string }> = {
 };
 
 const FACE: Record<number, Face> = {
-  1: { name: "Pepe", ticker: "PEPE", logo: "https://cdn.dexscreener.com/cms/images/ae001139fa1fcd24f8421d82caf72d8e06fabafab33b089c5d2e6d18039354e7?width=800&height=800&quality=95&format=auto", notes: "Frog meme. This card stays the Phase 1 working sheet, with the discount on the seeded rows.", links: [{ name: "Website", url: "https://www.pepe.vip/" }, { name: "X", url: "https://twitter.com/pepecoineth" }] },
+  1: { name: "Pepe", ticker: "PEPE", logo: "https://cdn.dexscreener.com/cms/images/ae001139fa1fcd24f8421d82caf72d8e06fabafab33b089c5d2e6d18039354e7?width=800&height=800&quality=95&format=auto", notes: "", links: [{ name: "Website", url: "https://www.pepe.vip/" }, { name: "X", url: "https://twitter.com/pepecoineth" }] },
   2: { name: "Fartcoin", ticker: "FARTCOIN", logo: "https://cdn.dexscreener.com/cms/images/9af5672845c89585e9ff1e3b26a640090324aa4d92222052d1043e60ef8182de?width=800&height=800&quality=95&format=auto", notes: "Terminal-of-truths meme that stayed on the Solana trending boards.", links: [{ name: "X", url: "https://x.com/FartCoinOfSOL" }] },
   3: { name: "Ethena", ticker: "ENA", logo: "https://cdn.dexscreener.com/cms/images/0557c42577095f2f922ae1a1ba0b50a3ed07cb4dfdd3d2c45abb360d4f30523e?width=800&height=800&quality=95&format=auto", notes: "Synthetic dollar and yield. Utility on this card is the yield product.", launch: "utility", utility: "Yield", links: [{ name: "Website", url: "https://www.ethena.fi/" }, { name: "X", url: "https://twitter.com/ethena_labs" }, { name: "Telegram", url: "https://t.me/ethena_labs" }] },
   4: { name: "Brett", ticker: "BRETT", logo: "https://cdn.dexscreener.com/cms/images/86b556a0cb4ed7f3b6b6fecd16161f487dccebb89ed7d302b834fb1c0ce197b8?width=800&height=800&quality=95&format=auto", notes: "Base character meme. One of the names that kept showing up on Base trend lists.", links: [{ name: "Website", url: "https://www.basedbrett.com/" }, { name: "X", url: "https://twitter.com/BasedBrett" }, { name: "Telegram", url: "https://t.me/basedbrett" }] },
@@ -150,7 +150,7 @@ function project(input: {
     discountUsd: input.discountUsd || 0,
     discountNote: input.discountUsd ? "Desk discount" : "",
     sample: input.n === 1,
-    notes: face?.notes || "Roster worksheet. Prices are the catalog rates, split by pre-launch, phase, and startup.",
+    notes: face ? face.notes : "Roster worksheet. Prices are the catalog rates, split by pre-launch, phase, and startup.",
     lineItems,
     checks,
     wallets: mockWallets(id),

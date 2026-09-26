@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Plus } from "@phosphor-icons/react";
-import { Empty, PageHead, Pill, Select, Tabs, ViewSwitch } from "../components/ui";
+import { Empty, Pill, Select, Tabs, ViewSwitch } from "../components/ui";
 import { byId, money } from "../lib/format";
 import { PHASES, SERVICE_KINDS } from "../lib/labels";
 import { packageMark, serviceMark } from "../lib/marks";
@@ -34,8 +34,7 @@ export function Catalog({ scope = "all" }: { scope?: "all" | "services" }) {
     .filter((item) => item.list.length > 0);
 
   return (
-    <div className="page">
-      <PageHead kicker="Menu" title={scope === "services" ? "Services" : "Catalog"} lede={scope === "services" ? "Each service on its own, apart from the packs." : "Everything on the menu. Packages and services each have their own list under this."} actions={<Link className="btn btn-primary" href="/catalog/new"><Plus size={16} weight="bold" />New service</Link>} />
+    <div className="page screen">
       <div className="tool-bar">
         <Tabs
           value={phase}
@@ -49,9 +48,11 @@ export function Catalog({ scope = "all" }: { scope?: "all" | "services" }) {
           {scope !== "services" && <Select value={kind} onChange={(value) => setKind(value as ServiceKind | "all")} options={[{ value: "all", label: "All kinds" }, ...SERVICE_KINDS.map((item) => ({ value: item.id, label: item.label }))]} />}
           <input className="input" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
           <ViewSwitch value={view} onChange={setView} />
+          <Link className="btn btn-primary" href="/catalog/new"><Plus size={16} weight="bold" />New service</Link>
         </div>
       </div>
-      {groups.length === 0 && packs.length === 0 && <Empty title="Nothing in this filter" text="Try another phase or clear the search." />}
+      <div className="desk-fit">
+      {groups.length === 0 && packs.length === 0 && (menu.length === 0 && store.packages.length === 0 && !query.trim() ? <Empty title="No services yet" text="New service starts a line." /> : <Empty title="Nothing in this filter" text="Try another phase or clear the search." />)}
       {phase === "all" && packs.length > 0 && (
         <section className="section">
           {view === "table" ? (
@@ -161,6 +162,7 @@ export function Catalog({ scope = "all" }: { scope?: "all" | "services" }) {
           )}
         </section>
       )}
+      </div>
     </div>
   );
 }

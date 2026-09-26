@@ -10,6 +10,8 @@ export type AddRequest = {
   packageId?: string;
   tierId?: string;
   phase?: PhaseId;
+  countries?: string[];
+  callers?: string[];
   nonce: number;
 };
 

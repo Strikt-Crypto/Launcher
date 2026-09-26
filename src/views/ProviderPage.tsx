@@ -8,7 +8,7 @@ import { Empty } from "../components/ui";
 import { formatUsd, href } from "../lib/format";
 import { phaseOf } from "../lib/labels";
 import { socialLogo } from "../lib/brands";
-import { deskMark } from "../lib/marks";
+import { deskMark, packageMark, serviceMark } from "../lib/marks";
 import { initials } from "../lib/logo";
 import { useStore } from "../store";
 
@@ -29,7 +29,7 @@ export function ProviderPage() {
   ].filter(Boolean) as { label: string; url: string }[];
 
   return (
-    <div className="page">
+    <div className="page screen">
       <header className="card desk-head has-mark">
         <span className="mark token-logo lg">{deskMark(provider, store.platforms) ? <img src={deskMark(provider, store.platforms)} alt="" /> : initials(provider.name)}</span>
         <div className="kicker">{provider.role || "Seller"}{provider.region ? ` · ${provider.region}` : ""}</div>
@@ -44,34 +44,39 @@ export function ProviderPage() {
         </div>
       </header>
 
+      <div className="desk-fit">
       <div className="quote-layout">
         <div className="stack">
           <section className="card hold">
             <div className="spread"><h2>Services</h2><span className="tiny">{services.length}</span></div>
-            <div className="card-scroll">
-            {services.length === 0 && <p className="muted">No services point here.</p>}
-            <div className="outlet-grid">
-              {services.map((item) => (
-                <Link key={item.id} href={`/catalog/${item.id}`}>
-                  <strong>{item.name}</strong>
+            <div className="line-fill">
+            {services.length === 0 && <p className="muted line-empty">No services.</p>}
+            {services.map((item) => {
+              const mark = serviceMark(item, store.platforms);
+              return (
+                <Link key={item.id} href={`/catalog/${item.id}`} className="list-row seller-row">
+                  <span className="token-logo sm">{mark ? <img src={mark} alt="" /> : initials(item.name)}</span>
+                  <span>{item.name}</span>
                   <span className="tiny">{phaseOf(item.phase).label}</span>
                 </Link>
-              ))}
-            </div>
+              );
+            })}
             </div>
           </section>
           <section className="card hold">
             <div className="spread"><h2>Packages</h2><span className="tiny">{packages.length}</span></div>
-            <div className="card-scroll">
-            {packages.length === 0 && <p className="muted">No packages point here.</p>}
-            <div className="outlet-grid">
-              {packages.map((item) => (
-                <Link key={item.id} href={`/packages/${item.id}`}>
-                  <strong>{item.name}</strong>
-                  <span className="tiny">{formatUsd(item.price)}</span>
+            <div className="line-fill">
+            {packages.length === 0 && <p className="muted line-empty">No packages.</p>}
+            {packages.map((item) => {
+              const mark = packageMark(item, store.platforms);
+              return (
+                <Link key={item.id} href={`/packages/${item.id}`} className="list-row seller-row">
+                  <span className="token-logo sm">{mark ? <img src={mark} alt="" /> : initials(item.name)}</span>
+                  <span>{item.name}</span>
+                  <b className="num">{formatUsd(item.price)}</b>
                 </Link>
-              ))}
-            </div>
+              );
+            })}
             </div>
           </section>
         </div>
@@ -93,6 +98,8 @@ export function ProviderPage() {
             {links.map((item) => <a key={item.label} href={item.url} target="_blank" rel="noreferrer" className="brand-bit">{socialLogo(item.label) && <img className="mark-logo" src={socialLogo(item.label)} alt="" />}{item.label}</a>)}
           </div>
         </aside>
+      </div>
+
       </div>
 
       <ProviderEditor open={edit} initial={provider} onClose={() => setEdit(false)} />

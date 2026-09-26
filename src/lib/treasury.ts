@@ -2,10 +2,14 @@ import { ROUTE_LABEL } from "./labels";
 import type { LineItem, SupplyPct, SupplyRoute, Treasury, TreasuryKey } from "../types";
 
 export const SUPPLY_ROWS: { pct: SupplyPct; v1: number; v2: number }[] = [
+  { pct: 10, v1: 0.271, v2: 0.335 },
+  { pct: 20, v1: 0.406, v2: 0.503 },
   { pct: 30, v1: 0.609, v2: 0.754 },
   { pct: 40, v1: 0.913, v2: 1.131 },
   { pct: 50, v1: 1.369, v2: 1.697 },
   { pct: 60, v1: 2.054, v2: 2.545 },
+  { pct: 70, v1: 3.081, v2: 3.818 },
+  { pct: 80, v1: 4.622, v2: 5.727 },
 ];
 
 export const TREASURY_KEYS: TreasuryKey[] = [
@@ -69,8 +73,8 @@ export function treasuryDraft(treasury: Treasury, key: TreasuryKey): Omit<LineIt
     if (!row) return null;
     return shell({
       source: "service",
-      refId: "supply-buy",
-      name: "Buy supply",
+      refId: treasury.route === "v2" ? "supply-buy-v2" : "supply-buy",
+      name: treasury.route === "v2" ? "Buy supply · Curve, then V4" : "Buy supply · Uniswap V3",
       phase: "startup",
       detail: `${treasury.supplyPct}% · ${ROUTE_LABEL[treasury.route]}`,
       providerId: "treasury-desk",

@@ -1,7 +1,7 @@
 import { launchKindOf } from "./labels";
 import type { AppState, AssetPack, Contact, PhaseId, TreasuryKey } from "../types";
 
-const STARTUP_REFS = new Set(["pons-fee", "hot-wallets", "supply-buy", "volume-500k", "mm-budget", "mm-cost", "mm-retainer"]);
+const STARTUP_REFS = new Set(["pons-fee", "hot-wallets", "supply-buy", "supply-buy-v2", "volume-500k", "mm-budget", "mm-cost", "mm-retainer"]);
 
 function normalizeContact(contact: Contact): Contact {
   return {
@@ -50,7 +50,7 @@ export function normalizeState(state: AppState): AppState {
       logo: project.logo || "",
       launch: launchKindOf(project.launch).id,
       utility: project.utility || "",
-      wallets: (project.wallets || []).map((wallet) => ({ ...wallet, privateKey: wallet.privateKey || "" })),
+      wallets: (project.wallets || []).map((wallet) => ({ ...wallet, privateKey: wallet.privateKey || "", group: wallet.group === "supply" ? "supply" : "hot" })),
       contactIds: [...new Set((project.contactIds || []).filter((id) => typeof id === "string" && id))],
       socials: (project.socials || []).map((social) => ({
         ...social,

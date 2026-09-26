@@ -1,9 +1,8 @@
 import type { AppState } from "../types";
-import { packages } from "./packages";
+import { packages, services } from "./catalog";
 import { platforms } from "./platforms";
 import { providers } from "./providers";
 import { rosterProjects } from "./roster";
-import { services } from "./services";
 
 export function seedState(): AppState {
   return {

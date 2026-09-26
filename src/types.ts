@@ -14,7 +14,7 @@ export type ServiceKind = "service" | "pack" | "retainer" | "treasury";
 
 export type PlatformKind = "launchpad" | "market" | "wallet" | "social";
 
-export type SupplyPct = 30 | 40 | 50 | 60;
+export type SupplyPct = 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80;
 
 export type SupplyRoute = "v1" | "v2";
 
@@ -72,6 +72,7 @@ export interface Service {
   includes: IncludeItem[];
   rules: string[];
   providerId: string;
+  contactId?: string;
   platformIds: string[];
   links: LinkItem[];
   chains: string[];
@@ -79,6 +80,7 @@ export interface Service {
   available: boolean;
   countryPick?: { max: number; includesWorldwide: boolean };
   openPrice?: boolean;
+  notes?: string;
 }
 
 export interface Outlet {
@@ -87,6 +89,7 @@ export interface Outlet {
   note?: string;
   group?: string;
   links?: LinkItem[];
+  price?: number;
 }
 
 export interface Package {
@@ -103,6 +106,7 @@ export interface Package {
   extras: string[];
   providerId: string;
   includes: IncludeItem[];
+  notes?: string;
 }
 
 export interface Provider {
@@ -138,6 +142,7 @@ export interface LineMeta {
   treasuryKey?: TreasuryKey;
   supplyPct?: SupplyPct;
   route?: SupplyRoute;
+  caller?: string;
 }
 
 export interface LineItem {
@@ -175,6 +180,7 @@ export interface Wallet {
   address: string;
   chain: string;
   purpose: string;
+  group?: "hot" | "supply";
   privateKey?: string;
 }
 

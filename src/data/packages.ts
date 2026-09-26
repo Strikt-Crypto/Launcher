@@ -97,7 +97,7 @@ export const packages: Package[] = [
     price: 1299,
     currency: "USD",
     summary: "One pack across GMGN hot search, X, GeckoTerminal, and Binance search.",
-    guarantees: ["Sold as one pack at $1,299"],
+    guarantees: ["One pack at $1,299"],
     outlets: [],
     extras: [],
     providerId: "robinhood-desk",
@@ -162,7 +162,7 @@ export const packages: Package[] = [
   },
   ...SUPPLY_ROWS.flatMap((row) => (["v1", "v2"] as SupplyRoute[]).map((route): Package => ({
     id: `supply-${row.pct}-${route}`,
-    name: `Buy ${row.pct}% supply`,
+    name: `Buy ${row.pct}% · ${route === "v1" ? "Uniswap V3" : "Curve, then V4"}`,
     rank: row.pct,
     group: "budget",
     phase: "startup",
