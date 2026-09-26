@@ -1,0 +1,10 @@
+# Railway service: indexer
+# Same repo. Set the config file path to railway/indexer.toml.
+# Share DATABASE_URL, REDIS_URL, INDEX_INTERVAL_MS, and CHAIN_RPC_URL with the web service.
+[build]
+builder = "nixpacks"
+buildCommand = "npm install"
+
+[deploy]
+startCommand = "npm run start:indexer"
+restartPolicyType = "on_failure"

@@ -1,0 +1,10 @@
+# Railway service: web
+# Add Postgres and Redis plugins, then set DATABASE_URL and REDIS_URL on this service.
+[build]
+builder = "nixpacks"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "npm run start"
+healthcheckPath = "/api/health"
+restartPolicyType = "on_failure"
