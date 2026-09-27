@@ -91,7 +91,7 @@ function monthGrid(cursor: Date) {
   });
 }
 
-function Face({ name, logo, className }: { name: string; logo: string; className?: string }) {
+function Face({ name, logo, className }: { name: string; logo?: string; className?: string }) {
   return logo ? <img className={className} src={logo} alt="" /> : <span className={className}>{initials(name)}</span>;
 }
 

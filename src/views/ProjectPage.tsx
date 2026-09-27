@@ -23,7 +23,7 @@ import { mockMarket } from "../lib/mockMarket";
 import { formatShare, formatTokens, walletHolding } from "../lib/walletHoldings";
 import { useStore } from "../store";
 import { useUi } from "../ui";
-import { Article, CheckSquare, ClipboardText, Copy, CurrencyCircleDollar, DownloadSimple, FileText, LinkSimple, Plus, Rocket, ShareNetwork, Trash, Users, Wallet } from "@phosphor-icons/react";
+import { Article, CheckSquare, ClipboardText, Copy, CurrencyCircleDollar, DownloadSimple, FileText, LinkSimple, Plus, Rocket, ShareNetwork, Trash, Users, Wallet as WalletIcon } from "@phosphor-icons/react";
 import type { AssetPack, BillingStatus, Contact, LaunchKind, LineItem, LineStatus, PhaseId, SocialAccount, SupplyPct, SupplyRoute, TreasuryKey, Wallet } from "../types";
 
 function editToken(id: string, focus: string) {
@@ -143,7 +143,7 @@ export function ProjectPage() {
         tabs={[
           { id: "desk", label: "Project", icon: Rocket },
           { id: "brief", label: "Details", icon: Article },
-          { id: "wallets", label: "Wallets", icon: Wallet, count: project.wallets.length },
+          { id: "wallets", label: "Wallets", icon: WalletIcon, count: project.wallets.length },
           { id: "socials", label: "Socials", icon: ShareNetwork, count: project.socials?.length || 0 },
           { id: "contacts", label: "Contacts", icon: Users, count: project.contactIds?.length || 0 },
           { id: "quote", label: "Plan", icon: ClipboardText, count: project.lineItems.length },

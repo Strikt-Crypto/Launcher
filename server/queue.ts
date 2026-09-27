@@ -14,7 +14,7 @@ export function getQueue() {
 
 export async function enqueueIndex(tokenId: string) {
   const queue = getQueue();
-  const jobId = `index:${tokenId}`;
+  const jobId = `index-${tokenId.replaceAll(":", "-")}`;
   const existing = await queue.getJob(jobId);
   if (existing) {
     const state = await existing.getState();
